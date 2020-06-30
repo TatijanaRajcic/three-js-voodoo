@@ -1,6 +1,4 @@
 import * as THREE from "../node_modules/three/src/Three.js";
-import Stats from "../node_modules/three/examples/jsm/libs/stats.module.js";
-
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import { FBXLoader } from "../node_modules/three/examples/jsm/loaders/FBXLoader.js";
 
@@ -9,16 +7,18 @@ let scene;
 let camera;
 let renderer;
 let controls;
+let clock = new THREE.Clock();
+let mixer;
 
 function init() {
   container = document.querySelector("#scene-container");
   createScene();
   createCamera();
   createLights();
+  loadModels();
 
   createControls();
   createRenderer();
-  play();
 }
 
 function createScene() {
@@ -38,30 +38,37 @@ function createCamera() {
 
 function createLights() {
   const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 5);
-
   const mainLight = new THREE.DirectionalLight(0xffffff, 5);
   mainLight.position.set(10, 10, 10);
-
   scene.add(ambientLight, mainLight);
 }
 
 function loadModels() {
   var loader = new FBXLoader();
-  loader.load("models/fbx/Samba Dancing.fbx", function (object) {
-    mixer = new THREE.AnimationMixer(object);
+  loader.load("../models/fbx/Kira 1.fbx", onLoad, onProgress, onError);
+}
 
-    var action = mixer.clipAction(object.animations[0]);
-    action.play();
+function onLoad(loadedObject) {
+  console.log(loadedObject);
+  mixer = new THREE.AnimationMixer(loadedObject); // the loaded model becomes a three.js object while loaded
 
-    object.traverse(function (child) {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
+  // var action = mixer.clipAction(loadedObject.animations[0]);
+  // action.play();
 
-    scene.add(object);
+  loadedObject.traverse(function (child) {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
   });
+
+  scene.add(loadedObject);
+}
+
+function onProgress() {}
+
+function onError(error) {
+  console.log(error);
 }
 
 function createControls() {
@@ -84,11 +91,11 @@ function render() {
   renderer.render(scene, camera);
 }
 
-function play() {
-  renderer.setAnimationLoop(() => {
-    update();
-    render();
-  });
+function animate() {
+  requestAnimationFrame(animate);
+  var delta = clock.getDelta();
+  if (mixer) mixer.update(delta);
+  render();
 }
 
 // function stop() {
@@ -104,3 +111,4 @@ function onWindowResize() {
 window.addEventListener("resize", onWindowResize);
 
 init();
+animate();
