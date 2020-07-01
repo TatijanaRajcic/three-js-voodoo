@@ -8,11 +8,14 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
-let mixer;
+let mixer; // holds the animation of one model
+// let mixers = [] // when we have several model, each with animations
 
 function init() {
   container = document.querySelector("#scene-container");
   createScene();
+  console.log(scene);
+  
   createCamera();
   createLights();
   loadModels();
@@ -23,6 +26,7 @@ function init() {
 
 function createScene() {
   scene = new THREE.Scene();
+  scene.background = new THREE.Color("skyblue"); // the color of the scene (think about it as the walls)
   var axesHelper = new THREE.AxesHelper(200);
   scene.add(axesHelper);
 }
@@ -33,7 +37,8 @@ function createCamera() {
   const near = 0.1;
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
+  //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
+  camera.position.set(0, 10, 20);
 }
 
 function createLights() {
@@ -45,12 +50,21 @@ function createLights() {
 
 function loadModels() {
   var loader = new FBXLoader();
-  loader.load("../models/fbx/Kira 1.fbx", onLoad, onProgress, onError);
+  loader.load(
+    "../models/fbx/character/Kira@Straight.fbx",
+    // "../models/fbx/basket/Basket.fbx",
+    onLoad,
+    onProgress,
+    onError
+  );
 }
 
 function onLoad(loadedObject) {
   console.log(loadedObject);
   mixer = new THREE.AnimationMixer(loadedObject); // the loaded model becomes a three.js object while loaded
+  // if we have several models, then we should have initialize an array mixers at the top of the script, and push every mixer inside of it
+  // const mixer = new THREE.AnimationMixer( model );
+  // mixers.push( mixer );
 
   // var action = mixer.clipAction(loadedObject.animations[0]);
   // action.play();
@@ -61,6 +75,7 @@ function onLoad(loadedObject) {
       child.receiveShadow = true;
     }
   });
+  loadedObject.position.set(0, 0, 0);
 
   scene.add(loadedObject);
 }
@@ -83,7 +98,14 @@ function createRenderer() {
   container.appendChild(renderer.domElement);
 }
 
-function update() {}
+function update() {
+  var delta = clock.getDelta();
+  if (mixer) mixer.update(delta);
+  // If we have several models so several mixers:
+  // for ( const mixer of mixers ) {
+  //   mixer.update( delta );
+  // }
+}
 
 function render() {
   renderer.gammaFactor = 2.2;
@@ -93,8 +115,7 @@ function render() {
 
 function animate() {
   requestAnimationFrame(animate);
-  var delta = clock.getDelta();
-  if (mixer) mixer.update(delta);
+  update();
   render();
 }
 
