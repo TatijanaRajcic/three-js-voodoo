@@ -9,7 +9,20 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
-let gltfModels = ["../models/gltf/basket/Basket.glb"];
+let character = {
+  url: "../models/gltf/character/Kira@Idle.glb",
+  position: new THREE.Vector3(0, 0, 13),
+};
+let basket = {
+  url: "../models/gltf/basket/Basket.glb",
+  position: new THREE.Vector3(0, 0, 0),
+};
+let trempoline = {
+  url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
+  position: new THREE.Vector3(0, 0, 7),
+};
+let box;
+
 let mixers = []; // when we have several model, each with animations
 
 function init() {
@@ -19,7 +32,7 @@ function init() {
   createLights();
 
   loadModels();
-  //createMeshes();
+  // createMeshes();
 
   createControls();
   createRenderer();
@@ -38,7 +51,7 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
-  camera.position.set(0, 10, 20);
+  camera.position.set(25, 20, 25);
 }
 
 function createLights() {
@@ -50,22 +63,42 @@ function createLights() {
 
 function loadModels() {
   // gltf models
-  gltfModels.forEach((model) => {
-    var loader = new GLTFLoader();
-    loader.load(model, onLoad, onProgress, onError);
-  });
+  var characterLoader = new GLTFLoader();
+  characterLoader.load(
+    character.url,
+    (characterGlft) => onLoad(characterGlft, character.position),
+    onProgress,
+    onError
+  );
+
+  var basketLoader = new GLTFLoader();
+  basketLoader.load(
+    basket.url,
+    (basketGlft) => onLoad(basketGlft, basket.position),
+    onProgress,
+    onError
+  );
+
+  var trempolineLoader = new GLTFLoader();
+  trempolineLoader.load(
+    trempoline.url,
+    (trempolineGlft) => onLoad(trempolineGlft, trempoline.position),
+    onProgress,
+    onError
+  );
 }
 
-function createMeshes() {
-  const materials = new THREE.MeshBasicMaterial();
-  const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
-  const box = new THREE.Mesh(geometries, materials);
-  box.position.set(5, 0, 0);
-  scene.add(box);
-}
+// function createMeshes() {
+//   const materials = new THREE.MeshBasicMaterial();
+//   const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
+//   box = new THREE.Mesh(geometries, materials);
+//   box.position.set(5, 0, 0);
+//   scene.add(box);
+// }
 
-function onLoad(loadedObject) {
+function onLoad(loadedObject, position) {
   const model = loadedObject.scene;
+  model.position.copy(position);
   const animation = loadedObject.animations[0];
   const mixer = new THREE.AnimationMixer(model);
   mixers.push(mixer);
@@ -74,6 +107,7 @@ function onLoad(loadedObject) {
     action.play();
   }
   scene.add(model);
+  return model;
 }
 
 function onProgress() {}
