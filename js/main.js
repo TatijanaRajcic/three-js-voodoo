@@ -1,6 +1,7 @@
 import * as THREE from "../node_modules/three/src/Three.js";
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import { FBXLoader } from "../node_modules/three/examples/jsm/loaders/FBXLoader.js";
+import { GLTFLoader } from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 
 let container;
 let scene;
@@ -8,17 +9,20 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
-let mixer; // holds the animation of one model
-// let mixers = [] // when we have several model, each with animations
+let fbxModels = ["../models/fbx/character/Kira@Straight.fbx"];
+let gltfModels = ["../models/gltf/basket/Basket.glb"];
+//let mixer; // holds the animation of one model
+let mixers = []; // when we have several model, each with animations
 
 function init() {
   container = document.querySelector("#scene-container");
   createScene();
-  console.log(scene);
-  
   createCamera();
   createLights();
+
   loadModels();
+  createMeshes();
+  console.log("MY SCENE", scene);
 
   createControls();
   createRenderer();
@@ -26,7 +30,7 @@ function init() {
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("skyblue"); // the color of the scene (think about it as the walls)
+  //scene.background = new THREE.Color("skyblue"); // the color of the scene (think about it as the walls)
   var axesHelper = new THREE.AxesHelper(200);
   scene.add(axesHelper);
 }
@@ -49,35 +53,60 @@ function createLights() {
 }
 
 function loadModels() {
-  var loader = new FBXLoader();
-  loader.load(
-    "../models/fbx/character/Kira@Straight.fbx",
-    // "../models/fbx/basket/Basket.fbx",
-    onLoad,
-    onProgress,
-    onError
-  );
+  // fbx models
+  fbxModels.forEach((model) => {
+    var loader = new FBXLoader();
+    loader.load(model, (model) => onLoad(model, "fbx"), onProgress, onError);
+  });
+  // gltf models
+  gltfModels.forEach((model) => {
+    var loader = new GLTFLoader();
+    loader.load(model, (model) => onLoad(model, "gltf"), onProgress, onError);
+  });
 }
 
-function onLoad(loadedObject) {
-  console.log(loadedObject);
-  mixer = new THREE.AnimationMixer(loadedObject); // the loaded model becomes a three.js object while loaded
-  // if we have several models, then we should have initialize an array mixers at the top of the script, and push every mixer inside of it
-  // const mixer = new THREE.AnimationMixer( model );
-  // mixers.push( mixer );
+function createMeshes() {
+  const materials = new THREE.MeshBasicMaterial();
+  const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
+  const box = new THREE.Mesh(geometries, materials);
+  box.position.set(5, 0, 0);
+  scene.add(box);
+}
 
-  // var action = mixer.clipAction(loadedObject.animations[0]);
-  // action.play();
+function onLoad(loadedObject, format) {
+  if (format === "fbx") {
+    const animation = loadedObject.animations[0];
+    const mixer = new THREE.AnimationMixer(loadedObject);
+    mixers.push(mixer);
+    const action = mixer.clipAction(animation);
+    action.play();
+    loadedObject.traverse(function (child) {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    loadedObject.position.set(0, 0, 0);
+    scene.add(loadedObject);
+  } else if (format === "gltf") {
+    const model = loadedObject.scene;
+    console.log(model);
+    // const animation = loadedObject.animations[0];
+    const mixer = new THREE.AnimationMixer(model);
+    mixers.push(mixer);
+    // const action = mixer.clipAction(animation);
+    // action.play();
+    scene.add(model);
+  }
 
-  loadedObject.traverse(function (child) {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
-  loadedObject.position.set(0, 0, 0);
+  // //Second method
+  // var box = new THREE.Box3().setFromObject(loadedObject);
+  // var center = new THREE.Vector3();
+  // box.getCenter(center);
+  // loadedObject.position.sub(center);
 
-  scene.add(loadedObject);
+  // //add to scene
+  // scene.add(loadedObject);
 }
 
 function onProgress() {}
@@ -100,11 +129,9 @@ function createRenderer() {
 
 function update() {
   var delta = clock.getDelta();
-  if (mixer) mixer.update(delta);
-  // If we have several models so several mixers:
-  // for ( const mixer of mixers ) {
-  //   mixer.update( delta );
-  // }
+  for (const mixer of mixers) {
+    mixer.update(delta);
+  }
 }
 
 function render() {
