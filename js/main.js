@@ -9,19 +9,29 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
-let character = {
-  url: "../models/gltf/character/Kira@Idle.glb",
-  position: new THREE.Vector3(0, 0, 13),
+let models = {
+  basket: {
+    url: "../models/gltf/basket/Basket.glb",
+    initialStatus: {
+      position: new THREE.Vector3(0, 0, 0),
+    },
+  },
+  character: {
+    url: "../models/gltf/character/Kira@Flailing.glb",
+    initialStatus: {
+      position: new THREE.Vector3(0, 0, 16),
+      rotation: new THREE.Vector3(0, Math.PI, 0),
+    },
+  },
+  trempoline: {
+    url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
+    initialStatus: {
+      position: new THREE.Vector3(0, 0, 10),
+    },
+  },
 };
-let basket = {
-  url: "../models/gltf/basket/Basket.glb",
-  position: new THREE.Vector3(0, 0, 0),
-};
-let trempoline = {
-  url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
-  position: new THREE.Vector3(0, 0, 7),
-};
-let box;
+
+let moveCharacter = document.getElementById("move-character");
 
 let mixers = []; // when we have several model, each with animations
 
@@ -51,7 +61,7 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
-  camera.position.set(25, 20, 25);
+  camera.position.set(20, 15, 20);
 }
 
 function createLights() {
@@ -63,29 +73,22 @@ function createLights() {
 
 function loadModels() {
   // gltf models
-  var characterLoader = new GLTFLoader();
-  characterLoader.load(
-    character.url,
-    (characterGlft) => onLoad(characterGlft, character.position),
-    onProgress,
-    onError
-  );
+  for (const model in models) {
+    const currentModel = models[model];
+    const loader = new GLTFLoader();
+    loader.load(
+      currentModel.url,
+      (currentGlft) =>
+        onLoad(currentGlft, currentModel.initialStatus, model, assignModel), // function that gets executed when the currentModel has finished loading
+      onProgress,
+      onError
+    );
+  }
+}
 
-  var basketLoader = new GLTFLoader();
-  basketLoader.load(
-    basket.url,
-    (basketGlft) => onLoad(basketGlft, basket.position),
-    onProgress,
-    onError
-  );
-
-  var trempolineLoader = new GLTFLoader();
-  trempolineLoader.load(
-    trempoline.url,
-    (trempolineGlft) => onLoad(trempolineGlft, trempoline.position),
-    onProgress,
-    onError
-  );
+function assignModel(modelName, model) {
+  models[modelName] = model;
+  console.log(models);
 }
 
 // function createMeshes() {
@@ -96,18 +99,36 @@ function loadModels() {
 //   scene.add(box);
 // }
 
-function onLoad(loadedObject, position) {
+function onLoad(loadedObject, initialStatus, modelName, callback) {
   const model = loadedObject.scene;
-  model.position.copy(position);
-  const animation = loadedObject.animations[0];
+  callback(modelName, model);
+  model.position.copy(initialStatus.position);
+  if (initialStatus.rotation) {
+    model.rotateX(initialStatus.rotation.x);
+    model.rotateY(initialStatus.rotation.y);
+    model.rotateZ(initialStatus.rotation.z);
+  }
+  console.log("ANIMATIONS", loadedObject.animations);
+
+  // const animation = loadedObject.animations[0];
+  // const mixer = new THREE.AnimationMixer(model);
+  // mixers.push(mixer);
+  // if (animation) {
+  //   console.log(animation);
+  //   const action = mixer.clipAction(animation);
+  //   action.play();
+  // }
+
+  const animations = loadedObject.animations;
   const mixer = new THREE.AnimationMixer(model);
   mixers.push(mixer);
-  if (animation) {
-    const action = mixer.clipAction(animation);
-    action.play();
+  if (animations.length >= 1) {
+    animations.forEach((animation) => {
+      const action = mixer.clipAction(animation);
+      action.play();
+    });
   }
   scene.add(model);
-  return model;
 }
 
 function onProgress() {}
@@ -147,6 +168,10 @@ function animate() {
   render();
 }
 
+function move(model) {
+  model.position.x += 0.2;
+}
+
 // function stop() {
 //   renderer.setAnimationLoop(null);
 // }
@@ -161,3 +186,5 @@ window.addEventListener("resize", onWindowResize);
 
 init();
 animate();
+
+moveCharacter.onclick = () => move(models.character);
