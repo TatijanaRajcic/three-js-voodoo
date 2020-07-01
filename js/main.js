@@ -9,9 +9,7 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
-let fbxModels = ["../models/fbx/character/Kira@Straight.fbx"];
 let gltfModels = ["../models/gltf/basket/Basket.glb"];
-//let mixer; // holds the animation of one model
 let mixers = []; // when we have several model, each with animations
 
 function init() {
@@ -21,8 +19,7 @@ function init() {
   createLights();
 
   loadModels();
-  createMeshes();
-  console.log("MY SCENE", scene);
+  //createMeshes();
 
   createControls();
   createRenderer();
@@ -30,7 +27,6 @@ function init() {
 
 function createScene() {
   scene = new THREE.Scene();
-  //scene.background = new THREE.Color("skyblue"); // the color of the scene (think about it as the walls)
   var axesHelper = new THREE.AxesHelper(200);
   scene.add(axesHelper);
 }
@@ -53,15 +49,10 @@ function createLights() {
 }
 
 function loadModels() {
-  // fbx models
-  fbxModels.forEach((model) => {
-    var loader = new FBXLoader();
-    loader.load(model, (model) => onLoad(model, "fbx"), onProgress, onError);
-  });
   // gltf models
   gltfModels.forEach((model) => {
     var loader = new GLTFLoader();
-    loader.load(model, (model) => onLoad(model, "gltf"), onProgress, onError);
+    loader.load(model, onLoad, onProgress, onError);
   });
 }
 
@@ -73,40 +64,16 @@ function createMeshes() {
   scene.add(box);
 }
 
-function onLoad(loadedObject, format) {
-  if (format === "fbx") {
-    const animation = loadedObject.animations[0];
-    const mixer = new THREE.AnimationMixer(loadedObject);
-    mixers.push(mixer);
+function onLoad(loadedObject) {
+  const model = loadedObject.scene;
+  const animation = loadedObject.animations[0];
+  const mixer = new THREE.AnimationMixer(model);
+  mixers.push(mixer);
+  if (animation) {
     const action = mixer.clipAction(animation);
     action.play();
-    loadedObject.traverse(function (child) {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    loadedObject.position.set(0, 0, 0);
-    scene.add(loadedObject);
-  } else if (format === "gltf") {
-    const model = loadedObject.scene;
-    console.log(model);
-    // const animation = loadedObject.animations[0];
-    const mixer = new THREE.AnimationMixer(model);
-    mixers.push(mixer);
-    // const action = mixer.clipAction(animation);
-    // action.play();
-    scene.add(model);
   }
-
-  // //Second method
-  // var box = new THREE.Box3().setFromObject(loadedObject);
-  // var center = new THREE.Vector3();
-  // box.getCenter(center);
-  // loadedObject.position.sub(center);
-
-  // //add to scene
-  // scene.add(loadedObject);
+  scene.add(model);
 }
 
 function onProgress() {}
