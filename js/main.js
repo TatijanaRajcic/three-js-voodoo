@@ -17,7 +17,7 @@ let models = {
     },
   },
   character: {
-    url: "../models/gltf/character/Kira@Flailing.glb",
+    url: "../models/gltf/character/Kira combined.glb",
     initialStatus: {
       position: new THREE.Vector3(0, 0, 16),
       rotation: new THREE.Vector3(0, Math.PI, 0),
@@ -108,27 +108,21 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
     model.rotateY(initialStatus.rotation.y);
     model.rotateZ(initialStatus.rotation.z);
   }
-  console.log("ANIMATIONS", loadedObject.animations);
-
-  // const animation = loadedObject.animations[0];
-  // const mixer = new THREE.AnimationMixer(model);
-  // mixers.push(mixer);
-  // if (animation) {
-  //   console.log(animation);
-  //   const action = mixer.clipAction(animation);
-  //   action.play();
-  // }
-
-  const animations = loadedObject.animations;
   const mixer = new THREE.AnimationMixer(model);
   mixers.push(mixer);
-  if (animations.length >= 1) {
-    animations.forEach((animation) => {
-      const action = mixer.clipAction(animation);
-      action.play();
-    });
+  if (modelName === "character") {
+    chooseAnimation(loadedObject, mixer, "Straight");
   }
   scene.add(model);
+}
+
+function chooseAnimation(loadedObject, mixer, name) {
+  const clips = loadedObject.animations;
+  var clip = THREE.AnimationClip.findByName(clips, name);
+  if (clip) {
+    var action = mixer.clipAction(clip);
+    action.play();
+  }
 }
 
 function onProgress() {}
