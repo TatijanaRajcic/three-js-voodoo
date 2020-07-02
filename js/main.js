@@ -2,6 +2,7 @@ import * as THREE from "../node_modules/three/src/Three.js";
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import { FBXLoader } from "../node_modules/three/examples/jsm/loaders/FBXLoader.js";
 import { GLTFLoader } from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
+import THREEx from "./threex/threex.keyboardstate.js";
 
 let container;
 let scene;
@@ -9,6 +10,8 @@ let camera;
 let renderer;
 let controls;
 let clock = new THREE.Clock();
+var collidableMeshList = [];
+
 let models = {
   basket: {
     url: "../models/gltf/basket/Basket.glb",
@@ -23,13 +26,17 @@ let models = {
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
-  trempoline: {
-    url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
-    initialStatus: {
-      position: new THREE.Vector3(0, 0, 10),
-    },
-  },
+  // trempoline: {
+  //   url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
+  //   initialStatus: {
+  //     position: new THREE.Vector3(0, 0, 10),
+  //   },
+  // },
 };
+
+let globalVertices = { character: [], basket: [] };
+
+var keyboard = new THREEx.KeyboardState();
 
 let moveCharacter = document.getElementById("move-character");
 
@@ -88,7 +95,40 @@ function loadModels() {
 
 function assignModel(modelName, model) {
   models[modelName] = model;
-  console.log(models);
+  if (modelName != "character") {
+    collidableMeshList.push(model);
+  }
+
+  //console.log("---------- THE CURRENT MODEL IS: --------------", modelName);
+
+  models[modelName].traverse(function (child) {
+    if (child.geometry) {
+      if (child.isMesh) {
+        // console.log("CHILD MESH,", child);
+        // console.log("CHILD GEOMETRY", child.geometry);
+
+        const position = child.geometry.attributes.position;
+        const vector = new THREE.Vector3();
+        for (let i = 0, l = position.count; i < l; i++) {
+          vector.fromBufferAttribute(position, i);
+          vector.applyMatrix4(child.matrixWorld);
+          globalVertices[modelName].push(vector);
+        }
+
+        // console.log(
+        //   `The vertices for ${modelName} are`,
+        //   globalVertices[modelName]
+        // );
+      }
+    }
+
+    // console.log(child.geometry.isBufferGeometry);
+
+    // if (child.isMesh) {
+    //   console.log("vertices: ", child.geometry.vertices);
+    //   // do something with object.geometry
+    // }
+  });
 }
 
 // function createMeshes() {
@@ -147,6 +187,63 @@ function update() {
   var delta = clock.getDelta();
   for (const mixer of mixers) {
     mixer.update(delta);
+  }
+
+  var moveDistance = 10 * delta; // 200 pixels per second
+  var rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
+
+  if (keyboard.pressed("A")) models.character.rotation.y += rotateAngle;
+  if (keyboard.pressed("D")) models.character.rotation.y -= rotateAngle;
+
+  if (keyboard.pressed("left")) models.character.position.x -= moveDistance;
+  if (keyboard.pressed("right")) models.character.position.x += moveDistance;
+  if (keyboard.pressed("up")) models.character.position.z -= moveDistance;
+  if (keyboard.pressed("down")) models.character.position.z += moveDistance;
+
+  if (models.character.position) {
+    var originPoint = models.character.position.clone();
+
+    for (
+      var vertexIndex = 0;
+      vertexIndex < globalVertices.character.length;
+      vertexIndex++
+    ) {
+      console.log(vertexIndex);
+
+      var localVertex = globalVertices.character[vertexIndex].clone();
+      console.log("local vertex", localVertex);
+
+      console.log("matrice du character", models.character.matrix);
+
+      var globalVertex = localVertex.applyMatrix4(models.character.matrix);
+      console.log("global vertex", globalVertex);
+
+      console.log("character's position:", models.character.position);
+
+      var directionVector = globalVertex.sub(models.character.position);
+      console.log("direction vector", directionVector);
+
+      var ray = new THREE.Raycaster(
+        originPoint,
+        directionVector.clone().normalize()
+      );
+
+      console.log("RAY", ray);
+
+      debugger;
+
+      var collisionResults = ray.intersectObjects(collidableMeshList);
+      //console.log("COLLIDABLE MESH LIST", collidableMeshList[0]);
+      //console.log(collisionResults);
+
+      if (
+        collisionResults.length > 0 &&
+        collisionResults[0].distance < directionVector.length()
+      ) {
+        debugger;
+        console.log("collision");
+      }
+    }
   }
 }
 
