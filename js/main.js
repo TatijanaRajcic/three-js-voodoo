@@ -41,8 +41,6 @@ let initialization = {
 
 let models = {};
 
-let globalVertices = { character: [], basket: [] };
-
 var keyboard = new THREEx.KeyboardState();
 
 let characterJump = document.getElementById("jump");
@@ -52,6 +50,9 @@ let characterTuck = document.getElementById("tuck");
 characterTuck.onclick = tuck;
 
 let mixers = []; // when we have several model, each with animations
+
+var basketBox = new THREE.Box3();
+var characterBox = new THREE.Box3();
 
 function init() {
   container = document.querySelector("#scene-container");
@@ -230,12 +231,12 @@ function moveCharacter(delta) {
     models.character.scene.position.z += moveDistance;
 }
 
+
+
 function checkCollision() {
-  var basketBox = new THREE.Box3();
   basketBox.setFromObject(models.basket.scene);
   scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
 
-  var characterBox = new THREE.Box3();
   characterBox.setFromObject(models.character.scene);
   scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
 
