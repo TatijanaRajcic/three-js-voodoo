@@ -51,7 +51,7 @@ var keyboard = new THREEx.KeyboardState();
 
 //let mixers = []; // when we have several model, each with animations
 
-let mixers = { character: [], basket: [], trempoline: [] };
+let mixers = {};
 
 var basketBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
@@ -150,7 +150,12 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
     model.rotateZ(initialStatus.rotation.z);
   }
   const mixer = new THREE.AnimationMixer(model);
-  mixers.push(mixer);
+  console.log(modelName);
+
+  // mixers[modelName] = [];
+  // mixers[modelName].push(mixer);
+
+  mixers[modelName] = mixer;
 
   if (modelName === "character") {
     chooseAnimation(loadedObject, mixer, "Straight");
@@ -220,9 +225,15 @@ function createRenderer() {
 
 function update() {
   var delta = clock.getDelta();
-  for (const mixer of mixers) {
-    mixer.update(delta);
+  //console.log(mixers);
+  for (let mixer in mixers) {
+    console.log("ONE MIXER", mixers[mixer]);
+    mixers[mixer].update(delta);
   }
+
+  // for (const mixer in mixers) {
+  //   mixers[mixer].forEach((mixer) => update(delta));
+  // }
   moveCharacter(delta);
   moveBall();
 }
@@ -287,7 +298,7 @@ function animate() {
 function jump() {
   //console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
-  mixers.push(mixer);
+  mixers["character"] = mixer;
   chooseAnimation(models.character, mixer, "Jumping", true);
   // models.character.scene.position.y += 2;
   mixer.addEventListener("finished", function (e) {
