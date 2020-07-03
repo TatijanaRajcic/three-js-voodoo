@@ -21,7 +21,7 @@ let initialization = {
   character: {
     url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
-      position: new THREE.Vector3(0, 0, 12),
+      position: new THREE.Vector3(0, 0, 8),
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -55,12 +55,15 @@ let mixers = {};
 
 var basketBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
+let basketBall = createSphere();
 
 let touch = false;
 let jumpDone = false;
 let durationJump = 0;
 
-let basketBall = createSphere();
+let flying = false;
+let falling = false;
+let landed = false;
 
 function init() {
   container = document.querySelector("#scene-container");
@@ -150,7 +153,7 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
     model.rotateZ(initialStatus.rotation.z);
   }
   const mixer = new THREE.AnimationMixer(model);
-  console.log(modelName);
+  //console.log(modelName);
 
   // mixers[modelName] = [];
   // mixers[modelName].push(mixer);
@@ -227,7 +230,7 @@ function update() {
   var delta = clock.getDelta();
   //console.log(mixers);
   for (let mixer in mixers) {
-    console.log("ONE MIXER", mixers[mixer]);
+    //console.log("ONE MIXER", mixers[mixer]);
     mixers[mixer].update(delta);
   }
 
@@ -236,6 +239,7 @@ function update() {
   // }
   moveCharacter(delta);
   moveBall();
+  if (flying) fly();
 }
 
 function moveBall() {
@@ -303,15 +307,56 @@ function jump() {
   // models.character.scene.position.y += 2;
   mixer.addEventListener("finished", function (e) {
     console.log("finished!!!");
-    console.log("MIXERS", mixers);
-  }); // properties of e: type, action and direction
-  console.log();
+    console.log(models.character.scene.rotation.x);
+    flying = true;
+    //  tuck();
+  });
+}
+
+function fly() {
+  if (!landed) {
+    console.log("flying!");
+    let characterPosition = models.character.scene.position;
+    let characterRotation = models.character.scene.rotation;
+
+    if (
+      characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
+      !falling
+    ) {
+      characterPosition.y += 0.1;
+    } else {
+      falling = true;
+      // debugger
+      characterPosition.y -= 0.04;
+    }
+
+    console.log("X ROTATION", characterRotation.x);
+
+    if (characterRotation.x > -4) {
+      characterRotation.x -= 0.02;
+    }
+    characterPosition.z -= 0.05;
+
+    console.log("MAX", basketBox.max.z);
+
+    if (characterBox.min.y < 0) {
+      console.log("LANDEEED!!!!");
+      landed = true;
+    }
+  }
+
+  // if (mouseDown) {
+  //   this.jump(0.05);
+  // } else {
+  //   if (this.group.position.y <= 0.4) return;
+  //   this.jump(0.08);
+  // }
 }
 
 function tuck() {
   console.log("tuck!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
-  mixers.push(mixer);
+  mixers["character"] = mixer;
   chooseAnimation(models.character, mixer, "Tuck");
 }
 
@@ -322,7 +367,7 @@ function tuck() {
 function onWindowResize() {
   //console.log(models);
   //console.log(mixers);
-  console.log(camera.position);
+  //console.log(camera.position);
 
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
