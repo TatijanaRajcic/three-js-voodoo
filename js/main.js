@@ -25,12 +25,12 @@ let initialization = {
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
-  trempoline: {
-    url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
-    initialStatus: {
-      position: new THREE.Vector3(0, 0, 10),
-    },
-  },
+  // trempoline: {
+  //   url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
+  //   initialStatus: {
+  //     position: new THREE.Vector3(0, 0, 10),
+  //   },
+  // },
   stadium: {
     url: "../models/gltf/cartoon stadiums/cartoon stadium.glb",
     initialStatus: {
@@ -43,16 +43,20 @@ let models = {};
 
 var keyboard = new THREEx.KeyboardState();
 
-let characterJump = document.getElementById("jump");
-characterJump.onclick = jump;
+// let characterJump = document.getElementById("jump");
+// characterJump.onclick = jump;
 
-let characterTuck = document.getElementById("tuck");
-characterTuck.onclick = tuck;
+// let characterTuck = document.getElementById("tuck");
+// characterTuck.onclick = tuck;
 
 let mixers = []; // when we have several model, each with animations
 
 var basketBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
+
+let touch = false;
+let jumpDone = false;
+let durationJump = 0;
 
 function init() {
   container = document.querySelector("#scene-container");
@@ -66,6 +70,8 @@ function init() {
 
   createControls();
   createRenderer();
+
+  setTouchListeners();
 }
 
 function createScene() {
@@ -81,7 +87,8 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
-  camera.position.set(12, 8, 25);
+  //camera.position.set(12, 8, 25);
+  camera.position.set(6, 19, 39);
 }
 
 function createLights() {
@@ -146,11 +153,15 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   scene.add(model);
 }
 
-function chooseAnimation(loadedObject, mixer, name) {
+function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
   const clips = loadedObject.animations;
   var clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
     var action = mixer.clipAction(clip);
+    if (clampWhenFinished) {
+      action.clampWhenFinished = true;
+      action.loop = THREE.LoopOnce;
+    }
     action.play();
   }
 }
@@ -231,17 +242,17 @@ function moveCharacter(delta) {
     models.character.scene.position.z += moveDistance;
 }
 
-
-
 function checkCollision() {
-  basketBox.setFromObject(models.basket.scene);
-  scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
+  if (models.basket && models.character) {
+    basketBox.setFromObject(models.basket.scene);
+    scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
 
-  characterBox.setFromObject(models.character.scene);
-  scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
+    characterBox.setFromObject(models.character.scene);
+    scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
 
-  let result = basketBox.intersectsBox(characterBox);
-  if (result) console.log("collision!");
+    let result = basketBox.intersectsBox(characterBox);
+    if (result) console.log("collision!");
+  }
 }
 
 function render() {
@@ -255,13 +266,17 @@ function animate() {
   update();
   render();
   checkCollision();
+  checkTouch();
 }
-
 function jump() {
   console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
   mixers.push(mixer);
-  chooseAnimation(models.character, mixer, "Jumping");
+  chooseAnimation(models.character, mixer, "Jumping", true);
+  // models.character.scene.position.y += 2;
+  mixer.addEventListener("finished", function (e) {
+    //chooseAnimation(models.character, mixer, "Tuck");
+  }); // properties of e: type, action and direction
 }
 
 function tuck() {
@@ -276,8 +291,8 @@ function tuck() {
 // }
 
 function onWindowResize() {
-  console.log(models);
-  console.log(mixers);
+  //console.log(models);
+  //console.log(mixers);
 
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
@@ -292,3 +307,34 @@ animate();
 // buttonMoveCharacter.onclick = () => {
 //   console.log("heyhey");
 // };
+
+function setTouchListeners() {
+  var el = document.querySelector("#scene-container canvas");
+  el.addEventListener("touchstart", handleStartTouch, false);
+  el.addEventListener("touchend", handleEndTouch, false);
+}
+
+function handleStartTouch() {
+  touch = true;
+  console.log("staaaaaaaaaaaart");
+}
+
+function checkTouch() {
+  if (touch || keyboard.pressed("space")) {
+    console.log("i'm holding");
+    console.log(camera.position);
+
+    if (!jumpDone) {
+      jump();
+    }
+    jumpDone = true;
+    durationJump += 1;
+  }
+}
+
+function handleEndTouch() {
+  touch = false;
+  console.log("i stopped!!");
+}
+
+startup();
