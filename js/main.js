@@ -11,7 +11,7 @@ let renderer;
 let controls;
 let clock = new THREE.Clock();
 
-let myElements = {
+let initialization = {
   basket: {
     url: "../models/gltf/basket/Basket.glb",
     initialStatus: {
@@ -80,33 +80,80 @@ function createLights() {
   scene.add(ambientLight, mainLight);
 }
 
+// function createMeshes() {
+//   const materials = new THREE.MeshBasicMaterial();
+//   const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
+//   box = new THREE.Mesh(geometries, materials);
+//   box.position.set(5, 0, 0);
+//   scene.add(box);
+// }
+
+// function createSphere() {
+//   var geometry = new THREE.SphereGeometry(0.3, 32, 32);
+//   var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+//   var sphere = new THREE.Mesh(geometry, material);
+//   // scene.add(sphere);
+//   return sphere;
+//   // group sphere and body part hand
+// }
+
 function loadModels() {
   // gltf models
-  for (const element in myElements) {
-    const currentModel = myElements[element];
-    loadOneModel(element, currentModel);
+  for (const oneElementInfo in initialization) {
+    const infoModel = initialization[oneElementInfo];
+    loadOneModel(oneElementInfo, infoModel);
   }
 }
 
-function loadOneModel(currentElement, currentModel) {
+function loadOneModel(oneElementInfo, infoModel) {
   const loader = new GLTFLoader();
   loader.load(
-    currentModel.url,
+    infoModel.url,
     (currentGlft) =>
-      onLoad(
-        currentGlft,
-        currentModel.initialStatus,
-        currentElement,
-        assignModel
-      ), // function that gets executed when the currentModel has finished loading
+      onLoad(currentGlft, infoModel.initialStatus, oneElementInfo, assignModel), // function that gets executed when the currentModel has finished loading
     onProgress,
     onError
   );
 }
 
-function assignModel(modelName, model) {
-  models[modelName] = model;
-  model.traverse(function (child) {
+function onLoad(loadedObject, initialStatus, modelName, callback) {
+  const global = loadedObject;
+  console.log("global with animations,", global);
+
+  callback(modelName, loadedObject);
+
+  const model = loadedObject.scene;
+  model.position.copy(initialStatus.position);
+  if (initialStatus.rotation) {
+    model.rotateX(initialStatus.rotation.x);
+    model.rotateY(initialStatus.rotation.y);
+    model.rotateZ(initialStatus.rotation.z);
+  }
+  const mixer = new THREE.AnimationMixer(model);
+  mixers.push(mixer);
+  console.log("loaded object is", loadedObject);
+
+  if (modelName === "character") {
+    chooseAnimation(loadedObject, mixer, "Idle");
+  }
+  scene.add(model);
+}
+
+function chooseAnimation(loadedObject, mixer, name) {
+  console.log("LOADED", loadedObject);
+  const clips = loadedObject.animations;
+  var clip = THREE.AnimationClip.findByName(clips, name);
+  if (clip) {
+    var action = mixer.clipAction(clip);
+    action.play();
+  }
+}
+
+function assignModel(modelName, globalScene) {
+  //console.log(model);
+
+  models[modelName] = globalScene;
+  globalScene.scene.traverse(function (child) {
     if (child.name === "hand_r") {
       //console.log(child);
       //console.log("hand right!");
@@ -138,55 +185,6 @@ function assignModel(modelName, model) {
   });
 }
 
-// function createMeshes() {
-//   const materials = new THREE.MeshBasicMaterial();
-//   const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
-//   box = new THREE.Mesh(geometries, materials);
-//   box.position.set(5, 0, 0);
-//   scene.add(box);
-// }
-
-function createSphere() {
-  var geometry = new THREE.SphereGeometry(0.3, 32, 32);
-  var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-  var sphere = new THREE.Mesh(geometry, material);
-  // scene.add(sphere);
-  return sphere;
-  // group sphere and body part hand
-}
-
-function onLoad(loadedObject, initialStatus, modelName, callback) {
-  const model = loadedObject.scene;
-  callback(modelName, model);
-  model.position.copy(initialStatus.position);
-  if (initialStatus.rotation) {
-    model.rotateX(initialStatus.rotation.x);
-    model.rotateY(initialStatus.rotation.y);
-    model.rotateZ(initialStatus.rotation.z);
-  }
-  const mixer = new THREE.AnimationMixer(model);
-  mixers.push(mixer);
-  console.log("loaded object is", loadedObject);
-
-  if (modelName === "character") {
-    console.log("loaded object is CHARACTER", loadedObject);
-
-    chooseAnimation(loadedObject, mixer, "Idle");
-  }
-  scene.add(model);
-}
-
-function chooseAnimation(loadedObject, mixer, name) {
-  console.log("LOADED", loadedObject);
-
-  const clips = loadedObject.animations;
-  var clip = THREE.AnimationClip.findByName(clips, name);
-  if (clip) {
-    var action = mixer.clipAction(clip);
-    action.play();
-  }
-}
-
 function onProgress() {}
 
 function onError(error) {
@@ -216,21 +214,24 @@ function update() {
 function moveCharacter(delta) {
   var moveDistance = 10 * delta; // 200 pixels per second
   var rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
-  if (keyboard.pressed("A")) models.character.rotation.y += rotateAngle;
-  if (keyboard.pressed("D")) models.character.rotation.y -= rotateAngle;
-  if (keyboard.pressed("left")) models.character.position.x -= moveDistance;
-  if (keyboard.pressed("right")) models.character.position.x += moveDistance;
-  if (keyboard.pressed("up")) models.character.position.z -= moveDistance;
-  if (keyboard.pressed("down")) models.character.position.z += moveDistance;
+  if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
+  if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
+  if (keyboard.pressed("left"))
+    models.character.scene.position.x -= moveDistance;
+  if (keyboard.pressed("right"))
+    models.character.scene.position.x += moveDistance;
+  if (keyboard.pressed("up")) models.character.scene.position.z -= moveDistance;
+  if (keyboard.pressed("down"))
+    models.character.scene.position.z += moveDistance;
 }
 
 function checkCollision() {
   var basketBox = new THREE.Box3();
-  basketBox.setFromObject(models.basket);
+  basketBox.setFromObject(models.basket.scene);
   scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
 
   var characterBox = new THREE.Box3();
-  characterBox.setFromObject(models.character);
+  characterBox.setFromObject(models.character.scene);
   scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
 
   let result = basketBox.intersectsBox(characterBox);
@@ -257,7 +258,7 @@ function jump() {}
 // }
 
 function onWindowResize() {
-  console.log(models.character);
+  console.log(models);
   console.log(mixers);
 
   camera.aspect = container.clientWidth / container.clientHeight;
