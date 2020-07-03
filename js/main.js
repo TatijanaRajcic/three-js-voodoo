@@ -34,7 +34,7 @@ let initialization = {
   stadium: {
     url: "../models/gltf/cartoon stadiums/cartoon stadium.glb",
     initialStatus: {
-      position: new THREE.Vector3(-50, 0, 40),
+      position: new THREE.Vector3(-47, 2, 40),
     },
   },
 };
