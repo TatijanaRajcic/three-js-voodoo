@@ -19,9 +19,9 @@ let initialization = {
     },
   },
   character: {
-    url: "../models/gltf/character/Kira combined.glb",
+    url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
-      position: new THREE.Vector3(0, 0, 16),
+      position: new THREE.Vector3(0, 0, 12),
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -49,7 +49,9 @@ var keyboard = new THREEx.KeyboardState();
 // let characterTuck = document.getElementById("tuck");
 // characterTuck.onclick = tuck;
 
-let mixers = []; // when we have several model, each with animations
+//let mixers = []; // when we have several model, each with animations
+
+let mixers = { character: [], basket: [], trempoline: [] };
 
 var basketBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
@@ -57,6 +59,8 @@ var characterBox = new THREE.Box3();
 let touch = false;
 let jumpDone = false;
 let durationJump = 0;
+
+let basketBall = createSphere();
 
 function init() {
   container = document.querySelector("#scene-container");
@@ -87,8 +91,9 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
-  //camera.position.set(12, 8, 25);
-  camera.position.set(6, 19, 39);
+  //camera.position.set(12, 8, 25); // on bigger screens
+  // camera.position.set(6, 19, 39);
+  camera.position.set(4, 13, 28);
 }
 
 function createLights() {
@@ -106,14 +111,14 @@ function createLights() {
 //   scene.add(box);
 // }
 
-// function createSphere() {
-//   var geometry = new THREE.SphereGeometry(0.3, 32, 32);
-//   var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-//   var sphere = new THREE.Mesh(geometry, material);
-//   // scene.add(sphere);
-//   return sphere;
-//   // group sphere and body part hand
-// }
+function createSphere() {
+  var geometry = new THREE.SphereGeometry(0.1, 32, 32);
+  var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  var sphere = new THREE.Mesh(geometry, material);
+  // scene.add(sphere);
+  return sphere;
+  // group sphere and body part hand
+}
 
 function loadModels() {
   // gltf models
@@ -170,9 +175,10 @@ function assignModel(modelName, globalScene) {
   //console.log(model);
 
   models[modelName] = globalScene;
+
   globalScene.scene.traverse(function (child) {
     if (child.name === "hand_r") {
-      //console.log(child);
+      //console.log("CHILD", child);
       //console.log("hand right!");
 
       var helper = new THREE.SkeletonHelper(child);
@@ -190,14 +196,6 @@ function assignModel(modelName, globalScene) {
       box.setFromObject(mesh);
       //console.log("BOX3 FROM HELPER", box);
       scene.add(new THREE.Box3Helper(box, 0xff0000));
-
-      // let basketBall = createSphere();
-      // basketBall.position.x = child.position.x;
-      // basketBall.position.y = child.position.y;
-      // basketBall.position.z = child.position.z;
-      // console.log("basket ball position", basketBall.position);
-
-      // scene.add(basketBall);
     }
   });
 }
@@ -226,6 +224,23 @@ function update() {
     mixer.update(delta);
   }
   moveCharacter(delta);
+  moveBall();
+}
+
+function moveBall() {
+  models.character.scene.traverse(function (child) {
+    if (child.name === "index_01_r") {
+      var twinGlobalPos = new THREE.Vector3();
+      twinGlobalPos.setFromMatrixPosition(child.matrixWorld);
+
+      basketBall.position.x = twinGlobalPos.x;
+      basketBall.position.y = twinGlobalPos.y;
+      basketBall.position.z = twinGlobalPos.z;
+      // console.log("basket ball position", basketBall.position);
+
+      scene.add(basketBall);
+    }
+  });
 }
 
 function moveCharacter(delta) {
@@ -268,6 +283,7 @@ function animate() {
   checkCollision();
   checkTouch();
 }
+
 function jump() {
   //console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
@@ -275,8 +291,10 @@ function jump() {
   chooseAnimation(models.character, mixer, "Jumping", true);
   // models.character.scene.position.y += 2;
   mixer.addEventListener("finished", function (e) {
-    //chooseAnimation(models.character, mixer, "Tuck");
+    console.log("finished!!!");
+    console.log("MIXERS", mixers);
   }); // properties of e: type, action and direction
+  console.log();
 }
 
 function tuck() {
@@ -293,6 +311,7 @@ function tuck() {
 function onWindowResize() {
   //console.log(models);
   //console.log(mixers);
+  console.log(camera.position);
 
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
@@ -321,18 +340,19 @@ function handleStartTouch() {
 
 function checkTouch() {
   if (touch || keyboard.pressed("space")) {
-    console.log("i'm holding");
+    //console.log("i'm holding");
     if (!jumpDone) {
       jump();
     }
     jumpDone = true;
     durationJump += 1;
+    // console.log(durationJump);
   }
 }
 
 function handleEndTouch() {
   touch = false;
-  // console.log("i stopped!!");
+  console.log("total jump duration", durationJump);
 }
 
 startup();
