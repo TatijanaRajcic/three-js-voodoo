@@ -11,7 +11,7 @@ let renderer;
 let controls;
 let clock = new THREE.Clock();
 
-let models = {
+let myElements = {
   basket: {
     url: "../models/gltf/basket/Basket.glb",
     initialStatus: {
@@ -33,6 +33,8 @@ let models = {
   },
 };
 
+let models = {};
+
 let globalVertices = { character: [], basket: [] };
 
 var keyboard = new THREEx.KeyboardState();
@@ -46,6 +48,7 @@ function init() {
   createScene();
   createCamera();
   createLights();
+  //createSphere();
 
   loadModels();
   // createMeshes();
@@ -79,21 +82,60 @@ function createLights() {
 
 function loadModels() {
   // gltf models
-  for (const model in models) {
-    const currentModel = models[model];
-    const loader = new GLTFLoader();
-    loader.load(
-      currentModel.url,
-      (currentGlft) =>
-        onLoad(currentGlft, currentModel.initialStatus, model, assignModel), // function that gets executed when the currentModel has finished loading
-      onProgress,
-      onError
-    );
+  for (const element in myElements) {
+    const currentModel = myElements[element];
+    loadOneModel(element, currentModel);
   }
+}
+
+function loadOneModel(currentElement, currentModel) {
+  const loader = new GLTFLoader();
+  loader.load(
+    currentModel.url,
+    (currentGlft) =>
+      onLoad(
+        currentGlft,
+        currentModel.initialStatus,
+        currentElement,
+        assignModel
+      ), // function that gets executed when the currentModel has finished loading
+    onProgress,
+    onError
+  );
 }
 
 function assignModel(modelName, model) {
   models[modelName] = model;
+  model.traverse(function (child) {
+    if (child.name === "hand_r") {
+      //console.log(child);
+      //console.log("hand right!");
+
+      var helper = new THREE.SkeletonHelper(child);
+      //console.log("HELPER", helper);
+      scene.add(helper);
+
+      // is there a way to use skeleton helper and get bounding box?
+      // the following does not work
+
+      var geometry = helper.geometry;
+      var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      var mesh = new THREE.Mesh(geometry, material);
+
+      var box = new THREE.Box3();
+      box.setFromObject(mesh);
+      //console.log("BOX3 FROM HELPER", box);
+      scene.add(new THREE.Box3Helper(box, 0xff0000));
+
+      // let basketBall = createSphere();
+      // basketBall.position.x = child.position.x;
+      // basketBall.position.y = child.position.y;
+      // basketBall.position.z = child.position.z;
+      // console.log("basket ball position", basketBall.position);
+
+      // scene.add(basketBall);
+    }
+  });
 }
 
 // function createMeshes() {
@@ -103,6 +145,15 @@ function assignModel(modelName, model) {
 //   box.position.set(5, 0, 0);
 //   scene.add(box);
 // }
+
+function createSphere() {
+  var geometry = new THREE.SphereGeometry(0.3, 32, 32);
+  var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  var sphere = new THREE.Mesh(geometry, material);
+  // scene.add(sphere);
+  return sphere;
+  // group sphere and body part hand
+}
 
 function onLoad(loadedObject, initialStatus, modelName, callback) {
   const model = loadedObject.scene;
@@ -115,13 +166,19 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   }
   const mixer = new THREE.AnimationMixer(model);
   mixers.push(mixer);
+  console.log("loaded object is", loadedObject);
+
   if (modelName === "character") {
-    chooseAnimation(loadedObject, mixer, "Straight");
+    console.log("loaded object is CHARACTER", loadedObject);
+
+    chooseAnimation(loadedObject, mixer, "Idle");
   }
   scene.add(model);
 }
 
 function chooseAnimation(loadedObject, mixer, name) {
+  console.log("LOADED", loadedObject);
+
   const clips = loadedObject.animations;
   var clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
@@ -170,12 +227,13 @@ function moveCharacter(delta) {
 function checkCollision() {
   var basketBox = new THREE.Box3();
   basketBox.setFromObject(models.basket);
+  scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
+
   var characterBox = new THREE.Box3();
   characterBox.setFromObject(models.character);
+  scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
 
   let result = basketBox.intersectsBox(characterBox);
- // console.log(result);
-
   if (result) console.log("collision!");
 }
 
@@ -192,15 +250,16 @@ function animate() {
   checkCollision();
 }
 
-function move(model) {
-  model.position.x += 0.2;
-}
+function jump() {}
 
 // function stop() {
 //   renderer.setAnimationLoop(null);
 // }
 
 function onWindowResize() {
+  console.log(models.character);
+  console.log(mixers);
+
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
