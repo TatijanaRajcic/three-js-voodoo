@@ -269,7 +269,7 @@ function animate() {
   checkTouch();
 }
 function jump() {
-  console.log("JUMP!!!");
+  //console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
   mixers.push(mixer);
   chooseAnimation(models.character, mixer, "Jumping", true);
@@ -316,14 +316,12 @@ function setTouchListeners() {
 
 function handleStartTouch() {
   touch = true;
-  console.log("staaaaaaaaaaaart");
+  // console.log("staaaaaaaaaaaart");
 }
 
 function checkTouch() {
   if (touch || keyboard.pressed("space")) {
     console.log("i'm holding");
-    console.log(camera.position);
-
     if (!jumpDone) {
       jump();
     }
@@ -334,7 +332,7 @@ function checkTouch() {
 
 function handleEndTouch() {
   touch = false;
-  console.log("i stopped!!");
+  // console.log("i stopped!!");
 }
 
 startup();
