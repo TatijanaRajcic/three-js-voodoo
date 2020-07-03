@@ -31,6 +31,12 @@ let initialization = {
       position: new THREE.Vector3(0, 0, 10),
     },
   },
+  stadium: {
+    url: "../models/gltf/cartoon stadiums/cartoon stadium.glb",
+    initialStatus: {
+      position: new THREE.Vector3(-50, 0, 40),
+    },
+  },
 };
 
 let models = {};
@@ -39,7 +45,11 @@ let globalVertices = { character: [], basket: [] };
 
 var keyboard = new THREEx.KeyboardState();
 
-let buttonMoveCharacter = document.getElementById("move-character");
+let characterJump = document.getElementById("jump");
+characterJump.onclick = jump;
+
+let characterTuck = document.getElementById("tuck");
+characterTuck.onclick = tuck;
 
 let mixers = []; // when we have several model, each with animations
 
@@ -70,7 +80,7 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
-  camera.position.set(20, 15, 20);
+  camera.position.set(12, 8, 25);
 }
 
 function createLights() {
@@ -117,9 +127,6 @@ function loadOneModel(oneElementInfo, infoModel) {
 }
 
 function onLoad(loadedObject, initialStatus, modelName, callback) {
-  const global = loadedObject;
-  console.log("global with animations,", global);
-
   callback(modelName, loadedObject);
 
   const model = loadedObject.scene;
@@ -131,16 +138,14 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   }
   const mixer = new THREE.AnimationMixer(model);
   mixers.push(mixer);
-  console.log("loaded object is", loadedObject);
 
   if (modelName === "character") {
-    chooseAnimation(loadedObject, mixer, "Idle");
+    chooseAnimation(loadedObject, mixer, "Straight");
   }
   scene.add(model);
 }
 
 function chooseAnimation(loadedObject, mixer, name) {
-  console.log("LOADED", loadedObject);
   const clips = loadedObject.animations;
   var clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
@@ -251,7 +256,19 @@ function animate() {
   checkCollision();
 }
 
-function jump() {}
+function jump() {
+  console.log("JUMP!!!");
+  const mixer = new THREE.AnimationMixer(models.character.scene);
+  mixers.push(mixer);
+  chooseAnimation(models.character, mixer, "Jumping");
+}
+
+function tuck() {
+  console.log("tuck!!!");
+  const mixer = new THREE.AnimationMixer(models.character.scene);
+  mixers.push(mixer);
+  chooseAnimation(models.character, mixer, "Tuck");
+}
 
 // function stop() {
 //   renderer.setAnimationLoop(null);
@@ -271,4 +288,6 @@ window.addEventListener("resize", onWindowResize);
 init();
 animate();
 
-buttonMoveCharacter.onclick = () => move(models.character);
+// buttonMoveCharacter.onclick = () => {
+//   console.log("heyhey");
+// };
