@@ -155,6 +155,12 @@ function createRenderer() {
   container.appendChild(renderer.domElement);
 }
 
+function render() {
+  renderer.gammaFactor = 2.2;
+  renderer.gammaOutput = true;
+  renderer.render(scene, camera);
+}
+
 // Setting up models and animations
 function loadModels() {
   // gltf models
@@ -330,12 +336,7 @@ function checkCollision() {
   }
 }
 
-// Lunching the game
-function render() {
-  renderer.gammaFactor = 2.2;
-  renderer.gammaOutput = true;
-  renderer.render(scene, camera);
-}
+// Core functions
 
 function update() {
   var delta = clock.getDelta();
