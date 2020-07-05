@@ -346,6 +346,14 @@ function fly() {
       characterPosition.y -= 0.04;
     }
 
+    if (
+      characterPosition.y >= 3 &&
+      characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
+      !falling
+    ) {
+      characterRotation.x -= 0.3;
+    }
+
     if (characterRotation.x > -4) {
       characterRotation.x -= 0.02;
     }
