@@ -63,6 +63,7 @@ let durationJump = 0;
 
 let flying = false;
 let falling = false;
+let basketCollision = false;
 let landed = false;
 
 function init() {
@@ -166,7 +167,13 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   scene.add(model);
 }
 
-function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
+function chooseAnimation(
+  loadedObject,
+  mixer,
+  name,
+  clampWhenFinished,
+  duration
+) {
   const clips = loadedObject.animations;
   var clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
@@ -175,6 +182,7 @@ function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
       action.clampWhenFinished = true;
       action.loop = THREE.LoopOnce;
     }
+    //if (duration) action.warp(1, 10, duration);
     action.play();
   }
 }
@@ -282,6 +290,7 @@ function checkCollision() {
 
     let result = basketBox.intersectsBox(characterBox);
     if (result) console.log("collision!");
+    return result;
   }
 }
 
@@ -309,12 +318,12 @@ function jump() {
     console.log("finished!!!");
     console.log(models.character.scene.rotation.x);
     flying = true;
-    //  tuck();
+    //tuck();
   });
 }
 
 function fly() {
-  if (!landed) {
+  if (!basketCollision) {
     console.log("flying!");
     let characterPosition = models.character.scene.position;
     let characterRotation = models.character.scene.rotation;
@@ -339,9 +348,9 @@ function fly() {
 
     console.log("MAX", basketBox.max.z);
 
-    if (characterBox.min.y < 0) {
-      console.log("LANDEEED!!!!");
-      landed = true;
+    if (checkCollision()) {
+      console.log("basket collision!!!!");
+      basketCollision = true;
     }
   }
 
@@ -412,3 +421,5 @@ function handleEndTouch() {
 }
 
 startup();
+
+
