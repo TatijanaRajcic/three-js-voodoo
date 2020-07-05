@@ -15,7 +15,7 @@ let clock = new THREE.Clock();
 // Keyboard related information
 let keyboard = new THREEx.KeyboardState();
 let touch = false;
-let jumpDone = false;
+let jumpInitiated = false;
 let durationJump = 0;
 
 // Models related information
@@ -61,6 +61,7 @@ let falling = false;
 let basketCollision = false;
 let holdingBall = true;
 
+// Lunching the whole page
 function init() {
   container = document.querySelector("#scene-container");
   createScene();
@@ -76,6 +77,34 @@ function init() {
   setTouchListeners();
 }
 
+// Setting up the event listeners for the beginning of the game
+// Pressing space bar on desktop; touching the screen on mobile
+function setTouchListeners() {
+  var el = document.querySelector("#scene-container canvas");
+  el.addEventListener("touchstart", handleStartTouch, false);
+  el.addEventListener("touchend", handleEndTouch, false);
+}
+
+function handleStartTouch() {
+  touch = true;
+}
+
+function checkTouch() {
+  if (touch || keyboard.pressed("space")) {
+    if (!jumpInitiated) {
+      jump();
+    }
+    jumpInitiated = true;
+    durationJump += 1;
+  }
+}
+
+function handleEndTouch() {
+  touch = false;
+  console.log("total jump duration", durationJump);
+}
+
+// Setting up Three.js
 function createScene() {
   scene = new THREE.Scene();
   var axesHelper = new THREE.AxesHelper(200);
@@ -114,6 +143,19 @@ function createSphere() {
   return sphere;
 }
 
+function createControls() {
+  controls = new OrbitControls(camera, container);
+}
+
+function createRenderer() {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.physicallyCorrectLights = true;
+  container.appendChild(renderer.domElement);
+}
+
+// Setting up models and animations
 function loadModels() {
   // gltf models
   for (const oneElementInfo in initialization) {
@@ -186,26 +228,20 @@ function onError(error) {
   console.log(error);
 }
 
-function createControls() {
-  controls = new OrbitControls(camera, container);
-}
+// Handling main action
 
-function createRenderer() {
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.physicallyCorrectLights = true;
-  container.appendChild(renderer.domElement);
-}
-
-function update() {
-  var delta = clock.getDelta();
-  for (let mixer in mixers) {
-    mixers[mixer].update(delta);
-  }
-  moveCharacter(delta);
-  moveBall();
-  fly();
+function moveCharacter(delta) {
+  var moveDistance = 10 * delta; // 200 pixels per second
+  var rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
+  if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
+  if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
+  if (keyboard.pressed("left"))
+    models.character.scene.position.x -= moveDistance;
+  if (keyboard.pressed("right"))
+    models.character.scene.position.x += moveDistance;
+  if (keyboard.pressed("up")) models.character.scene.position.z -= moveDistance;
+  if (keyboard.pressed("down"))
+    models.character.scene.position.z += moveDistance;
 }
 
 function moveBall() {
@@ -231,49 +267,7 @@ function moveBall() {
   }
 }
 
-function moveCharacter(delta) {
-  var moveDistance = 10 * delta; // 200 pixels per second
-  var rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
-  if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
-  if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
-  if (keyboard.pressed("left"))
-    models.character.scene.position.x -= moveDistance;
-  if (keyboard.pressed("right"))
-    models.character.scene.position.x += moveDistance;
-  if (keyboard.pressed("up")) models.character.scene.position.z -= moveDistance;
-  if (keyboard.pressed("down"))
-    models.character.scene.position.z += moveDistance;
-}
-
-function checkCollision() {
-  if (models.basket && models.character) {
-    basketBox.setFromObject(models.basket.scene);
-    scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
-
-    characterBox.setFromObject(models.character.scene);
-    scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
-
-    let result = basketBox.intersectsBox(characterBox);
-    return result;
-  }
-}
-
-function render() {
-  renderer.gammaFactor = 2.2;
-  renderer.gammaOutput = true;
-  renderer.render(scene, camera);
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  update();
-  render();
-  checkCollision();
-  checkTouch();
-}
-
 function jump() {
-  //console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
   mixers.character = mixer;
   chooseAnimation(models.character, mixer, "Jumping", true);
@@ -323,12 +317,50 @@ function fly() {
   }
 }
 
-function tuck() {
-  console.log("tuck!!!");
-  const mixer = new THREE.AnimationMixer(models.character.scene);
-  mixers["character"] = mixer;
-  chooseAnimation(models.character, mixer, "Tuck");
+function checkCollision() {
+  if (models.basket && models.character) {
+    basketBox.setFromObject(models.basket.scene);
+    scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
+
+    characterBox.setFromObject(models.character.scene);
+    scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
+
+    let result = basketBox.intersectsBox(characterBox);
+    return result;
+  }
 }
+
+// Lunching the game
+function render() {
+  renderer.gammaFactor = 2.2;
+  renderer.gammaOutput = true;
+  renderer.render(scene, camera);
+}
+
+function update() {
+  var delta = clock.getDelta();
+  for (let mixer in mixers) {
+    mixers[mixer].update(delta);
+  }
+  moveCharacter(delta);
+  moveBall();
+  fly();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  update();
+  render();
+  checkCollision();
+  checkTouch();
+}
+
+// function tuck() {
+//   console.log("tuck!!!");
+//   const mixer = new THREE.AnimationMixer(models.character.scene);
+//   mixers["character"] = mixer;
+//   chooseAnimation(models.character, mixer, "Tuck");
+// }
 
 function stop() {
   renderer.setAnimationLoop(null);
@@ -339,34 +371,7 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
 }
-
-function setTouchListeners() {
-  var el = document.querySelector("#scene-container canvas");
-  el.addEventListener("touchstart", handleStartTouch, false);
-  el.addEventListener("touchend", handleEndTouch, false);
-}
-
-function handleStartTouch() {
-  touch = true;
-}
-
-function checkTouch() {
-  if (touch || keyboard.pressed("space")) {
-    //console.log("i'm holding");
-    if (!jumpDone) {
-      jump();
-    }
-    jumpDone = true;
-    durationJump += 1;
-    // console.log(durationJump);
-  }
-}
-
-function handleEndTouch() {
-  touch = false;
-  console.log("total jump duration", durationJump);
-}
-
 window.addEventListener("resize", onWindowResize);
+
 init();
 animate();
