@@ -4,6 +4,7 @@ import { FBXLoader } from "../node_modules/three/examples/jsm/loaders/FBXLoader.
 import { GLTFLoader } from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import THREEx from "./threex/threex.keyboardstate.js";
 
+// Three.js initialization
 let container;
 let scene;
 let camera;
@@ -11,6 +12,13 @@ let renderer;
 let controls;
 let clock = new THREE.Clock();
 
+// Keyboard related information
+let keyboard = new THREEx.KeyboardState();
+let touch = false;
+let jumpDone = false;
+let durationJump = 0;
+
+// Models related information
 let initialization = {
   basket: {
     url: "../models/gltf/basket/Basket.glb",
@@ -40,31 +48,17 @@ let initialization = {
 };
 
 let models = {};
-
-var keyboard = new THREEx.KeyboardState();
-
-// let characterJump = document.getElementById("jump");
-// characterJump.onclick = jump;
-
-// let characterTuck = document.getElementById("tuck");
-// characterTuck.onclick = tuck;
-
-//let mixers = []; // when we have several model, each with animations
-
 let mixers = {};
 
+// Models representation on canvas
 var basketBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
 let basketBall = createSphere();
 
-let touch = false;
-let jumpDone = false;
-let durationJump = 0;
-
+// Action related information
 let flying = false;
 let falling = false;
 let basketCollision = false;
-// let landed = false;
 let holdingBall = true;
 
 function init() {
@@ -72,10 +66,9 @@ function init() {
   createScene();
   createCamera();
   createLights();
-  //createSphere();
 
   loadModels();
-  // createMeshes();
+  createMeshes();
 
   createControls();
   createRenderer();
@@ -95,9 +88,7 @@ function createCamera() {
   const near = 0.1;
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  //camera.position.set(2.5, 5, 10); // no matter the position of the camera, it will always look at its target, which is (0,0,0) by default
   //camera.position.set(12, 8, 25); // on bigger screens
-  // camera.position.set(6, 19, 39);
   camera.position.set(4, 13, 28);
 }
 
@@ -108,21 +99,19 @@ function createLights() {
   scene.add(ambientLight, mainLight);
 }
 
-// function createMeshes() {
-//   const materials = new THREE.MeshBasicMaterial();
-//   const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
-//   box = new THREE.Mesh(geometries, materials);
-//   box.position.set(5, 0, 0);
-//   scene.add(box);
-// }
+function createMeshes() {
+  const materials = new THREE.MeshBasicMaterial();
+  const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
+  let box = new THREE.Mesh(geometries, materials);
+  box.position.set(0, 0, 20);
+  scene.add(box);
+}
 
 function createSphere() {
   var geometry = new THREE.SphereGeometry(0.1, 32, 32);
   var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
   var sphere = new THREE.Mesh(geometry, material);
-  // scene.add(sphere);
   return sphere;
-  // group sphere and body part hand
 }
 
 function loadModels() {
@@ -146,7 +135,6 @@ function loadOneModel(oneElementInfo, infoModel) {
 
 function onLoad(loadedObject, initialStatus, modelName, callback) {
   callback(modelName, loadedObject);
-
   const model = loadedObject.scene;
   model.position.copy(initialStatus.position);
   if (initialStatus.rotation) {
@@ -155,13 +143,7 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
     model.rotateZ(initialStatus.rotation.z);
   }
   const mixer = new THREE.AnimationMixer(model);
-  //console.log(modelName);
-
-  // mixers[modelName] = [];
-  // mixers[modelName].push(mixer);
-
   mixers[modelName] = mixer;
-
   if (modelName === "character") {
     chooseAnimation(loadedObject, mixer, "Straight");
   }
@@ -189,30 +171,11 @@ function chooseAnimation(
 }
 
 function assignModel(modelName, globalScene) {
-  //console.log(model);
-
   models[modelName] = globalScene;
-
   globalScene.scene.traverse(function (child) {
     if (child.name === "hand_r") {
-      //console.log("CHILD", child);
-      //console.log("hand right!");
-
       var helper = new THREE.SkeletonHelper(child);
-      //console.log("HELPER", helper);
       scene.add(helper);
-
-      // is there a way to use skeleton helper and get bounding box?
-      // the following does not work
-
-      var geometry = helper.geometry;
-      var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-      var mesh = new THREE.Mesh(geometry, material);
-
-      var box = new THREE.Box3();
-      box.setFromObject(mesh);
-      //console.log("BOX3 FROM HELPER", box);
-      scene.add(new THREE.Box3Helper(box, 0xff0000));
     }
   });
 }
@@ -237,18 +200,12 @@ function createRenderer() {
 
 function update() {
   var delta = clock.getDelta();
-  //console.log(mixers);
   for (let mixer in mixers) {
-    //console.log("ONE MIXER", mixers[mixer]);
     mixers[mixer].update(delta);
   }
-
-  // for (const mixer in mixers) {
-  //   mixers[mixer].forEach((mixer) => update(delta));
-  // }
   moveCharacter(delta);
   moveBall();
-  if (flying) fly();
+  fly();
 }
 
 function moveBall() {
@@ -257,12 +214,9 @@ function moveBall() {
       if (child.name === "index_01_r") {
         var twinGlobalPos = new THREE.Vector3();
         twinGlobalPos.setFromMatrixPosition(child.matrixWorld);
-
         basketBall.position.x = twinGlobalPos.x;
         basketBall.position.y = twinGlobalPos.y;
         basketBall.position.z = twinGlobalPos.z;
-        // console.log("basket ball position", basketBall.position);
-
         scene.add(basketBall);
       }
     });
@@ -321,9 +275,8 @@ function animate() {
 function jump() {
   //console.log("JUMP!!!");
   const mixer = new THREE.AnimationMixer(models.character.scene);
-  mixers["character"] = mixer;
+  mixers.character = mixer;
   chooseAnimation(models.character, mixer, "Jumping", true);
-  // models.character.scene.position.y += 2;
   mixer.addEventListener("finished", function (e) {
     flying = true;
     //tuck();
@@ -331,21 +284,30 @@ function jump() {
 }
 
 function fly() {
-  if (!basketCollision) {
-    let characterPosition = models.character.scene.position;
-    let characterRotation = models.character.scene.rotation;
+  let characterPosition = models.character.scene.position;
+  let characterRotation = models.character.scene.rotation;
 
+  // handling the main character's top/bottom movements until colision with basketball hoop
+  if (flying && !basketCollision) {
     if (
       characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
       !falling
     ) {
-      characterPosition.y += 0.1;
+      characterPosition.y += 0.1; // rising phase
     } else {
       falling = true;
-      // debugger
-      characterPosition.y -= 0.04;
+      characterPosition.y -= 0.04; // falling phase
     }
 
+    // handling the main's character position across z axis
+    characterPosition.z -= 0.05;
+
+    // handling initial slight rotation of main character
+    if (characterRotation.x > -4) {
+      characterRotation.x -= 0.02;
+    }
+
+    // handling the main's character rotation during flip
     if (
       characterPosition.y >= 3 &&
       characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
@@ -354,23 +316,11 @@ function fly() {
       characterRotation.x -= 0.3;
     }
 
-    if (characterRotation.x > -4) {
-      characterRotation.x -= 0.02;
-    }
-    characterPosition.z -= 0.05;
-
     if (checkCollision()) {
       basketCollision = true;
       holdingBall = false;
     }
   }
-
-  // if (mouseDown) {
-  //   this.jump(0.05);
-  // } else {
-  //   if (this.group.position.y <= 0.4) return;
-  //   this.jump(0.08);
-  // }
 }
 
 function tuck() {
@@ -380,28 +330,15 @@ function tuck() {
   chooseAnimation(models.character, mixer, "Tuck");
 }
 
-// function stop() {
-//   renderer.setAnimationLoop(null);
-// }
+function stop() {
+  renderer.setAnimationLoop(null);
+}
 
 function onWindowResize() {
-  //console.log(models);
-  //console.log(mixers);
-  //console.log(camera.position);
-
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
 }
-
-window.addEventListener("resize", onWindowResize);
-
-init();
-animate();
-
-// buttonMoveCharacter.onclick = () => {
-//   console.log("heyhey");
-// };
 
 function setTouchListeners() {
   var el = document.querySelector("#scene-container canvas");
@@ -411,7 +348,6 @@ function setTouchListeners() {
 
 function handleStartTouch() {
   touch = true;
-  // console.log("staaaaaaaaaaaart");
 }
 
 function checkTouch() {
@@ -431,4 +367,6 @@ function handleEndTouch() {
   console.log("total jump duration", durationJump);
 }
 
-startup();
+window.addEventListener("resize", onWindowResize);
+init();
+animate();
