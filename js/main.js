@@ -21,7 +21,7 @@ let initialization = {
   character: {
     url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
-      position: new THREE.Vector3(0, 0, 8),
+      position: new THREE.Vector3(-0.3, 0, 8),
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -64,7 +64,8 @@ let durationJump = 0;
 let flying = false;
 let falling = false;
 let basketCollision = false;
-let landed = false;
+// let landed = false;
+let holdingBall = true;
 
 function init() {
   container = document.querySelector("#scene-container");
@@ -251,19 +252,29 @@ function update() {
 }
 
 function moveBall() {
-  models.character.scene.traverse(function (child) {
-    if (child.name === "index_01_r") {
-      var twinGlobalPos = new THREE.Vector3();
-      twinGlobalPos.setFromMatrixPosition(child.matrixWorld);
+  if (holdingBall) {
+    models.character.scene.traverse(function (child) {
+      if (child.name === "index_01_r") {
+        var twinGlobalPos = new THREE.Vector3();
+        twinGlobalPos.setFromMatrixPosition(child.matrixWorld);
 
-      basketBall.position.x = twinGlobalPos.x;
-      basketBall.position.y = twinGlobalPos.y;
-      basketBall.position.z = twinGlobalPos.z;
-      // console.log("basket ball position", basketBall.position);
+        basketBall.position.x = twinGlobalPos.x;
+        basketBall.position.y = twinGlobalPos.y;
+        basketBall.position.z = twinGlobalPos.z;
+        // console.log("basket ball position", basketBall.position);
 
-      scene.add(basketBall);
+        scene.add(basketBall);
+      }
+    });
+  } else {
+    if (basketBall.position.y > 0) {
+      basketBall.position.y -= 0.1;
     }
-  });
+    chooseAnimation(models.character, mixers.character, "Straight", true);
+    // if (models.character.scene.position.y > 0) {
+    //   models.character.scene.position.y -= 0.5
+    // }
+  }
 }
 
 function moveCharacter(delta) {
@@ -289,7 +300,6 @@ function checkCollision() {
     scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
 
     let result = basketBox.intersectsBox(characterBox);
-    if (result) console.log("collision!");
     return result;
   }
 }
@@ -315,8 +325,6 @@ function jump() {
   chooseAnimation(models.character, mixer, "Jumping", true);
   // models.character.scene.position.y += 2;
   mixer.addEventListener("finished", function (e) {
-    console.log("finished!!!");
-    console.log(models.character.scene.rotation.x);
     flying = true;
     //tuck();
   });
@@ -324,7 +332,6 @@ function jump() {
 
 function fly() {
   if (!basketCollision) {
-    console.log("flying!");
     let characterPosition = models.character.scene.position;
     let characterRotation = models.character.scene.rotation;
 
@@ -339,18 +346,14 @@ function fly() {
       characterPosition.y -= 0.04;
     }
 
-    console.log("X ROTATION", characterRotation.x);
-
     if (characterRotation.x > -4) {
       characterRotation.x -= 0.02;
     }
     characterPosition.z -= 0.05;
 
-    console.log("MAX", basketBox.max.z);
-
     if (checkCollision()) {
-      console.log("basket collision!!!!");
       basketCollision = true;
+      holdingBall = false;
     }
   }
 
@@ -421,5 +424,3 @@ function handleEndTouch() {
 }
 
 startup();
-
-
