@@ -13,8 +13,6 @@ let clock = new THREE.Clock();
 
 // Keyboard related information
 let keyboard = new THREEx.KeyboardState();
-let touch = false;
-let jumpInitiated = false;
 
 // Models related information
 let initialization = {
@@ -28,7 +26,6 @@ let initialization = {
     url: "../models/newgltf/combined-character.glb",
     initialStatus: {
       position: new THREE.Vector3(-0.3, 0, 8),
-      //position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -53,6 +50,8 @@ let currentLevel = 0;
 
 let levels = [
   {
+    characterInitialPosition: new THREE.Vector3(-0.3, 0, 8),
+    cameraPosition: { x: 4, y: 13, z: 28 },
     raising: 0.1,
     startFalling: 2 / 3,
     falling: 0.04,
@@ -61,20 +60,26 @@ let levels = [
     minimumFlips: 1,
   },
   {
+    characterInitialPosition: new THREE.Vector3(-0.3, 7.5, 8),
+    cameraPosition: { x: 10, y: 15, z: 30 },
+    raising: 0.07,
+    startFalling: 3 / 4,
+    falling: 0.12,
+    forward: 0.07,
+    flip: 0.2,
+    minimumFlips: 1,
+    action: () => createDivingBoard(15),
+  },
+  {
+    characterInitialPosition: new THREE.Vector3(-0.3, 15, 8),
+    cameraPosition: { x: 10, y: 35, z: 30 },
     raising: 0.06,
     startFalling: 4 / 5,
     falling: 0.13,
     forward: 0.04,
     flip: 0.2,
     minimumFlips: 2,
-  },
-  {
-    raising: 0.06,
-    startFalling: 4 / 5,
-    falling: 0.13,
-    forward: 0.04,
-    flip: 0.2,
-    minimumFlips: 3,
+    action: () => createDivingBoard(30),
   },
 ];
 
@@ -83,6 +88,8 @@ let hoopBox = new THREE.Box3();
 let basketBall = createSphere();
 
 // Action related information
+let touch = false;
+let jumpInitiated = false;
 let flying = false;
 let falling = false;
 let basketCollision = false;
@@ -97,7 +104,6 @@ function init() {
   createLights();
 
   loadModels();
-  //createDivingBoard();
 
   createControls();
   createRenderer();
@@ -152,8 +158,10 @@ function createCamera() {
   const near = 0.1;
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.set(4, 13, 28); // works for both big and small screens
-  //camera.position.set(15, 40, 20); // for diving board version
+  let initialX = levels[currentLevel].cameraPosition.x;
+  let initialY = levels[currentLevel].cameraPosition.y;
+  let initialZ = levels[currentLevel].cameraPosition.z;
+  camera.position.set(initialX, initialY, initialZ); // works for both big and small screens
 }
 
 function createLights() {
@@ -163,10 +171,9 @@ function createLights() {
   scene.add(ambientLight, mainLight);
 }
 
-function createDivingBoard() {
+function createDivingBoard(height) {
   const materials = new THREE.MeshBasicMaterial();
-  const geometries = new THREE.BoxBufferGeometry(2, 30, 1.5);
-
+  const geometries = new THREE.BoxBufferGeometry(2, height, 1.5);
   let box = new THREE.Mesh(geometries, materials);
   box.position.set(0, 0, 8);
   scene.add(box);
@@ -236,13 +243,8 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   scene.add(model);
 }
 
-function chooseAnimation(
-  loadedObject,
-  mixer,
-  name,
-  clampWhenFinished,
-  duration
-) {
+function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
+  // debugger;
   const clips = loadedObject.animations;
   let clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
@@ -251,7 +253,6 @@ function chooseAnimation(
       action.clampWhenFinished = true;
       action.loop = THREE.LoopOnce;
     }
-    //if (duration) action.warp(1, 10, duration);
     action.play();
   }
 }
@@ -313,28 +314,61 @@ function jump() {
   mixers.character = mixer;
   chooseAnimation(models.character, mixer, "Jumping", true);
   mixer.addEventListener("finished", function (e) {
-    flying = true;
+    if (e.action._clip.name === "Jumping") flying = true;
   });
 }
 
 function fly() {
-  let characterPosition = models.character.scene.position;
-  let characterRotation = models.character.scene.rotation;
-
   if (flying && !basketCollision) {
-    handlePositionY(characterPosition);
-    handlePositionZ(characterPosition);
-    handleRotationX(characterRotation); // initial rotation as the character is jumping
-    handleFlip(characterRotation);
+    // console.log("FLYING:", flying);
+    // console.log("BASKET COLLISION:", basketCollision);
+
+    handlePositionY();
+    handlePositionZ();
+    handleRotationX(); // initial rotation as the character is jumping
+    handleFlip();
     if (checkCollision()) {
       basketCollision = true;
       holdingBall = false;
       console.log("DUNK");
+      setTimeout(() => {
+        nextLevel();
+      }, 1000);
     }
   }
 }
 
-function handlePositionY(characterPosition) {
+function nextLevel() {
+  let characterPosition = models.character.scene.position;
+  let characterRotation = models.character.scene.rotation;
+  //console.log("rotation when going to next level", characterRotation.x);
+
+  currentLevel += 1;
+  if (levels[currentLevel].action) levels[currentLevel].action();
+  let initialX = levels[currentLevel].cameraPosition.x;
+  let initialY = levels[currentLevel].cameraPosition.y;
+  let initialZ = levels[currentLevel].cameraPosition.z;
+  camera.position.set(initialX, initialY, initialZ); // works for both big and small screens
+  chooseAnimation(models.character, mixers.character, "Idle", true);
+
+  characterPosition.x = levels[currentLevel].characterInitialPosition.x;
+  characterPosition.y = levels[currentLevel].characterInitialPosition.y;
+  characterPosition.z = levels[currentLevel].characterInitialPosition.z;
+
+  characterRotation.x = -3.14;
+
+  falling = false;
+  basketCollision = false;
+  holdingBall = true;
+  jumpInitiated = false;
+  flying = false;
+
+  initialDistance = characterPosition.z;
+}
+
+function handlePositionY() {
+  // debugger;
+  let characterPosition = models.character.scene.position;
   if (
     characterPosition.z >=
       levels[currentLevel].startFalling * initialDistance &&
@@ -347,17 +381,25 @@ function handlePositionY(characterPosition) {
   }
 }
 
-function handlePositionZ(characterPosition) {
+function handlePositionZ() {
+  let characterPosition = models.character.scene.position;
   characterPosition.z -= levels[currentLevel].forward;
 }
 
-function handleRotationX(characterRotation) {
+function handleRotationX() {
+  let characterRotation = models.character.scene.rotation;
+  //console.log("character's rotation during jump", characterRotation.x);
+
   if (characterRotation.x > -4) {
+    //console.log("WE ROTATE");
     characterRotation.x -= 0.02;
+  } else {
+    //console.log("WE DONT ROTATE");
   }
 }
 
-function handleFlip(characterRotation) {
+function handleFlip() {
+  let characterRotation = models.character.scene.rotation;
   if (falling && touch) {
     characterRotation.x -= levels[currentLevel].flip;
   }
@@ -401,6 +443,7 @@ function animate() {
   update();
   render();
   checkCollision();
+  console.log("FLYING:", flying);
 }
 
 // function tuck() {
@@ -415,6 +458,8 @@ function stop() {
 }
 
 function onWindowResize() {
+  //console.log(camera.position);
+
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
