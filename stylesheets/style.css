@@ -1,4 +1,13 @@
+@font-face {
+  font-family: "moon_getheavy";
+  src: url("../fonts/moon_get-heavy-webfont.woff2") format("woff2"),
+    url("../fonts/moon_get-heavy-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
+  font-family: "moon_getheavy";
   margin: 0;
 }
 
@@ -14,6 +23,7 @@ canvas {
   z-index: 100;
   display: block;
   height: 100vh;
+  font-size: 3rem;
 }
 
 #loose,
@@ -26,6 +36,10 @@ canvas {
   width: 100%;
   z-index: 100;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .visible {
