@@ -49,8 +49,10 @@ let initialization = {
 let models = {};
 let mixers = {};
 
-let levels = {
-  1: {
+let currentLevel = 0;
+
+let levels = [
+  {
     raising: 0.1,
     startFalling: 2 / 3,
     falling: 0.04,
@@ -58,7 +60,7 @@ let levels = {
     flip: 0.2,
     minimumFlips: 1,
   },
-  2: {
+  {
     raising: 0.06,
     startFalling: 4 / 5,
     falling: 0.13,
@@ -66,7 +68,7 @@ let levels = {
     flip: 0.2,
     minimumFlips: 2,
   },
-  3: {
+  {
     raising: 0.06,
     startFalling: 4 / 5,
     falling: 0.13,
@@ -74,10 +76,7 @@ let levels = {
     flip: 0.2,
     minimumFlips: 3,
   },
-};
-
-let currentLevel = 1;
-// let currentLevel = 2
+];
 
 // Models representation on canvas
 let hoopBox = new THREE.Box3();
@@ -110,7 +109,7 @@ function init() {
 // Setting up the event listeners for the beginning of the game
 // Pressing space bar on desktop; touching the screen on mobile
 function setTouchListeners() {
-  var el = document.querySelector("#scene-container canvas");
+  let el = document.querySelector("#scene-container canvas");
   el.addEventListener("touchstart", handleJumpStart, false);
   el.addEventListener("touchend", handleJumpEnd, false);
 }
@@ -143,7 +142,7 @@ function handleJumpEnd() {
 // Setting up Three.js
 function createScene() {
   scene = new THREE.Scene();
-  var axesHelper = new THREE.AxesHelper(200);
+  let axesHelper = new THREE.AxesHelper(200);
   scene.add(axesHelper);
 }
 
@@ -174,9 +173,9 @@ function createDivingBoard() {
 }
 
 function createSphere() {
-  var geometry = new THREE.SphereGeometry(0.1, 32, 32);
-  var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-  var sphere = new THREE.Mesh(geometry, material);
+  let geometry = new THREE.SphereGeometry(0.1, 32, 32);
+  let material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  let sphere = new THREE.Mesh(geometry, material);
   return sphere;
 }
 
@@ -245,9 +244,9 @@ function chooseAnimation(
   duration
 ) {
   const clips = loadedObject.animations;
-  var clip = THREE.AnimationClip.findByName(clips, name);
+  let clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
-    var action = mixer.clipAction(clip);
+    let action = mixer.clipAction(clip);
     if (clampWhenFinished) {
       action.clampWhenFinished = true;
       action.loop = THREE.LoopOnce;
@@ -261,7 +260,7 @@ function assignModel(modelName, globalScene) {
   models[modelName] = globalScene;
   globalScene.scene.traverse(function (child) {
     if (child.name === "hand_r") {
-      var helper = new THREE.SkeletonHelper(child);
+      let helper = new THREE.SkeletonHelper(child);
       scene.add(helper);
     }
   });
@@ -276,8 +275,8 @@ function onError(error) {
 // Handling main action
 
 function moveCharacter(delta) {
-  var moveDistance = 10 * delta; // 200 pixels per second
-  var rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
+  let moveDistance = 10 * delta; // 200 pixels per second
+  let rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
   if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
   if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
   if (keyboard.pressed("left"))
@@ -293,7 +292,7 @@ function moveBall() {
   if (holdingBall) {
     models.character.scene.traverse(function (child) {
       if (child.name === "index_01_r") {
-        var twinGlobalPos = new THREE.Vector3();
+        let twinGlobalPos = new THREE.Vector3();
         twinGlobalPos.setFromMatrixPosition(child.matrixWorld);
         basketBall.position.x = twinGlobalPos.x;
         basketBall.position.y = twinGlobalPos.y;
@@ -315,7 +314,6 @@ function jump() {
   chooseAnimation(models.character, mixer, "Jumping", true);
   mixer.addEventListener("finished", function (e) {
     flying = true;
-    //tuck();
   });
 }
 
@@ -376,13 +374,12 @@ function checkCollision() {
     scene.add(new THREE.Box3Helper(hoopBox, 0xff0000));
 
     // checking for collision between basketball and the hoop collider
-    var center = new THREE.Vector3();
+    let center = new THREE.Vector3();
     center.setFromMatrixPosition(basketBall.matrixWorld);
-    var radius = basketBall.geometry.boundingSphere.radius;
+    let radius = basketBall.geometry.boundingSphere.radius;
     let myBall = new THREE.Sphere(center, radius);
 
     let intersection = hoopBox.intersectsSphere(myBall);
-
     return intersection;
   }
 }
@@ -390,7 +387,7 @@ function checkCollision() {
 // Core functions
 
 function update() {
-  var delta = clock.getDelta();
+  let delta = clock.getDelta();
   for (let mixer in mixers) {
     mixers[mixer].update(delta);
   }
