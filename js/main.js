@@ -25,7 +25,7 @@ let initialization = {
     },
   },
   character: {
-    url: "../models/newgltf/newattempt2.glb",
+    url: "../models/newgltf/combined-character.glb",
     initialStatus: {
       position: new THREE.Vector3(-0.3, 0, 8),
       //position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
@@ -56,6 +56,7 @@ let levels = {
     falling: 0.04,
     forward: 0.057,
     flip: 0.2,
+    minimumFlips: 1,
   },
   2: {
     raising: 0.06,
@@ -63,6 +64,15 @@ let levels = {
     falling: 0.13,
     forward: 0.04,
     flip: 0.2,
+    minimumFlips: 2,
+  },
+  3: {
+    raising: 0.06,
+    startFalling: 4 / 5,
+    falling: 0.13,
+    forward: 0.04,
+    flip: 0.2,
+    minimumFlips: 3,
   },
 };
 
@@ -309,7 +319,6 @@ function jump() {
   });
 }
 
-// REWRITE IT WITH DISTANCES BETWEEN CHARACTER AND HOOP RATHER THAN HARD CODED VALUES
 function fly() {
   let characterPosition = models.character.scene.position;
   let characterRotation = models.character.scene.rotation;
