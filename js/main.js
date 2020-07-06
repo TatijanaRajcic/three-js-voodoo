@@ -30,6 +30,7 @@ let initialization = {
     url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
       position: new THREE.Vector3(-0.3, 0, 8),
+      //position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -60,6 +61,7 @@ let flying = false;
 let falling = false;
 let basketCollision = false;
 let holdingBall = true;
+let initialDistance;
 
 // Lunching the whole page
 function init() {
@@ -69,7 +71,7 @@ function init() {
   createLights();
 
   loadModels();
-  createMeshes();
+  //createDivingBoard();
 
   createControls();
   createRenderer();
@@ -118,7 +120,8 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(12, 8, 25); // on bigger screens
-  camera.position.set(4, 13, 28);
+  camera.position.set(4, 13, 28); // works for both big and small screens
+  //camera.position.set(15, 40, 20); // for diving board version
 }
 
 function createLights() {
@@ -128,11 +131,12 @@ function createLights() {
   scene.add(ambientLight, mainLight);
 }
 
-function createMeshes() {
+function createDivingBoard() {
   const materials = new THREE.MeshBasicMaterial();
-  const geometries = new THREE.BoxBufferGeometry(2, 2.25, 1.5);
+  const geometries = new THREE.BoxBufferGeometry(2, 30, 1.5);
+
   let box = new THREE.Mesh(geometries, materials);
-  box.position.set(0, 0, 20);
+  box.position.set(0, 0, 8);
   scene.add(box);
 }
 
@@ -190,9 +194,12 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
     model.rotateY(initialStatus.rotation.y);
     model.rotateZ(initialStatus.rotation.z);
   }
+
   const mixer = new THREE.AnimationMixer(model);
   mixers[modelName] = mixer;
   if (modelName === "character") {
+    initialDistance = model.position.z / 2;
+
     chooseAnimation(loadedObject, mixer, "Straight");
   }
   scene.add(model);
@@ -283,6 +290,7 @@ function jump() {
   });
 }
 
+// REWRITE IT WITH DISTANCES BETWEEN CHARACTER AND HOOP RATHER THAN HARD CODED VALUES
 function fly() {
   let characterPosition = models.character.scene.position;
   let characterRotation = models.character.scene.rotation;
@@ -299,6 +307,16 @@ function fly() {
       characterPosition.y -= 0.04; // falling phase
     }
 
+    // console.log(initialDistance);
+    // console.log(characterPosition.z);
+
+    // if (characterPosition.z >= initialDistance / 2 && !falling) {
+    //   characterPosition.y += 0.1; // rising phase
+    // } else {
+    //   falling = true;
+    //   characterPosition.y -= 0.04; // falling phase
+    // }
+
     // handling the main's character position across z axis
     characterPosition.z -= 0.05;
 
@@ -308,6 +326,7 @@ function fly() {
     }
 
     // handling the main's character rotation during flip
+    // USE USER INPUT (JUMP DURATION)
     if (
       characterPosition.y >= 3 &&
       characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
