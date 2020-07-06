@@ -1,6 +1,5 @@
 import * as THREE from "../node_modules/three/src/Three.js";
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
-import { FBXLoader } from "../node_modules/three/examples/jsm/loaders/FBXLoader.js";
 import { GLTFLoader } from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import THREEx from "./threex/threex.keyboardstate.js";
 
@@ -28,8 +27,8 @@ let initialization = {
   character: {
     url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
-      //position: new THREE.Vector3(-0.3, 0, 8),
-      position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
+      position: new THREE.Vector3(-0.3, 0, 8),
+      //position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -67,7 +66,7 @@ let levels = {
   },
 };
 
-let currentLevel = 2;
+let currentLevel = 1;
 
 // Models representation on canvas
 var basketBox = new THREE.Box3();
@@ -89,7 +88,7 @@ function init() {
   createLights();
 
   loadModels();
-  createDivingBoard();
+  //createDivingBoard();
 
   createControls();
   createRenderer();
@@ -145,8 +144,8 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(12, 8, 25); // on bigger screens
-  //camera.position.set(4, 13, 28); // works for both big and small screens
-  camera.position.set(15, 40, 20); // for diving board version
+  camera.position.set(4, 13, 28); // works for both big and small screens
+  //camera.position.set(15, 40, 20); // for diving board version
 }
 
 function createLights() {
@@ -298,7 +297,7 @@ function moveBall() {
     });
   } else {
     if (basketBall.position.y > 0) {
-      basketBall.position.y -= 0.1;
+      basketBall.position.y -= 0.01;
     }
     chooseAnimation(models.character, mixers.character, "Straight", true);
     // if (models.character.scene.position.y > 0) {
@@ -365,7 +364,13 @@ function handleFlip(characterRotation) {
 
 function checkCollision() {
   if (models.basket && models.character) {
-    basketBox.setFromObject(models.basket.scene);
+    //console.log(models.basket.scene);
+    models.basket.scene.traverse(function (child) {
+      if (child.name === "HoopCollider") {
+        basketBox.setFromObject(child);
+      }
+    });
+    //basketBox.setFromObject(models.basket.scene);
     scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
 
     characterBox.setFromObject(models.character.scene);
