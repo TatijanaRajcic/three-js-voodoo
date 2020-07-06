@@ -54,7 +54,7 @@ let levels = {
     raising: 0.1,
     startFalling: 2 / 3,
     falling: 0.04,
-    forward: 0.05,
+    forward: 0.057,
     flip: 0.2,
   },
   2: {
@@ -69,7 +69,7 @@ let levels = {
 let currentLevel = 1;
 
 // Models representation on canvas
-var basketBox = new THREE.Box3();
+var hoopBox = new THREE.Box3();
 var characterBox = new THREE.Box3();
 let basketBall = createSphere();
 
@@ -223,9 +223,6 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   mixers[modelName] = mixer;
   if (modelName === "character") {
     initialDistance = model.position.z;
-
-    console.log(initialDistance);
-
     chooseAnimation(loadedObject, mixer, "Straight");
   }
   scene.add(model);
@@ -297,12 +294,9 @@ function moveBall() {
     });
   } else {
     if (basketBall.position.y > 0) {
-      basketBall.position.y -= 0.01;
+      basketBall.position.y -= 0.1;
     }
     chooseAnimation(models.character, mixers.character, "Straight", true);
-    // if (models.character.scene.position.y > 0) {
-    //   models.character.scene.position.y -= 0.5
-    // }
   }
 }
 
@@ -329,6 +323,7 @@ function fly() {
     if (checkCollision()) {
       basketCollision = true;
       holdingBall = false;
+      console.log("DUNK");
     }
   }
 }
@@ -364,20 +359,23 @@ function handleFlip(characterRotation) {
 
 function checkCollision() {
   if (models.basket && models.character) {
-    //console.log(models.basket.scene);
+    // adding a box around the hoop collider
     models.basket.scene.traverse(function (child) {
       if (child.name === "HoopCollider") {
-        basketBox.setFromObject(child);
+        hoopBox.setFromObject(child);
       }
     });
-    //basketBox.setFromObject(models.basket.scene);
-    scene.add(new THREE.Box3Helper(basketBox, 0xff0000));
+    scene.add(new THREE.Box3Helper(hoopBox, 0xff0000));
 
-    characterBox.setFromObject(models.character.scene);
-    scene.add(new THREE.Box3Helper(characterBox, 0xff0000));
+    // checking for collision between basketball and the hoop collider
+    var center = new THREE.Vector3();
+    center.setFromMatrixPosition(basketBall.matrixWorld);
+    var radius = basketBall.geometry.boundingSphere.radius;
+    let myBall = new THREE.Sphere(center, radius);
 
-    let result = basketBox.intersectsBox(characterBox);
-    return result;
+    let intersection = hoopBox.intersectsSphere(myBall);
+
+    return intersection;
   }
 }
 
