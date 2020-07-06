@@ -324,7 +324,6 @@ function fly() {
       basketCollision = true;
       holdingBall = false;
       console.log("DUNK");
-      displayNextMessage();
       nextLevel();
     }
 
@@ -397,8 +396,15 @@ function checkFailure() {
 
 function nextLevel() {
   // going to the next level
-  currentLevel += 1;
-  replay();
+  if (currentLevel < levels.length - 1) {
+    currentLevel += 1;
+    displayNextMessage();
+    replay();
+  } else {
+    console.log("end of game!!");
+    displayEndMessage();
+    stop();
+  }
 }
 
 function replay() {
@@ -445,13 +451,6 @@ function animate() {
   render();
 }
 
-// function tuck() {
-//   console.log("tuck!!!");
-//   const mixer = new THREE.AnimationMixer(models.character.scene);
-//   mixers["character"] = mixer;
-//   chooseAnimation(models.character, mixer, "Tuck");
-// }
-
 function stop() {
   renderer.setAnimationLoop(null);
 }
@@ -477,6 +476,11 @@ function displayNextMessage() {
   setTimeout(() => {
     nextMessage.style.visibility = "hidden";
   }, 3000);
+}
+
+function displayEndMessage() {
+  let endMessage = document.getElementById("end");
+  endMessage.style.visibility = "visible";
 }
 
 init();

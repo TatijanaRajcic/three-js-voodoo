@@ -17,7 +17,8 @@ canvas {
 }
 
 #loose,
-#next {
+#next,
+#end {
   visibility: hidden;
   position: absolute;
   top: 0;
@@ -29,4 +30,9 @@ canvas {
 
 .visible {
   visibility: visible;
+}
+
+a {
+  text-decoration: none;
+  color: white;
 }
