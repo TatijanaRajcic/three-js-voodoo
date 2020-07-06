@@ -72,7 +72,7 @@ let levels = [
   },
   {
     characterInitialPosition: new THREE.Vector3(-0.3, 15, 8),
-    cameraPosition: { x: 10, y: 35, z: 30 },
+    cameraPosition: { x: 12, y: 25, z: 33 },
     raising: 0.06,
     startFalling: 4 / 5,
     falling: 0.13,
@@ -86,6 +86,7 @@ let levels = [
 // Models representation on canvas
 let hoopBox = new THREE.Box3();
 let basketBall = createSphere();
+let characterBox = new THREE.Box3();
 
 // Action related information
 let touch = false;
@@ -95,6 +96,7 @@ let falling = false;
 let basketCollision = false;
 let holdingBall = true;
 let initialDistance;
+let enoughFlips = true;
 
 // Lunching the whole page
 function init() {
@@ -206,7 +208,6 @@ function render() {
 
 // Setting up models and animations
 function loadModels() {
-  // gltf models
   for (const oneElementInfo in initialization) {
     const infoModel = initialization[oneElementInfo];
     loadOneModel(oneElementInfo, infoModel);
@@ -244,7 +245,6 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
 }
 
 function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
-  // debugger;
   const clips = loadedObject.animations;
   let clip = THREE.AnimationClip.findByName(clips, name);
   if (clip) {
@@ -259,12 +259,6 @@ function chooseAnimation(loadedObject, mixer, name, clampWhenFinished) {
 
 function assignModel(modelName, globalScene) {
   models[modelName] = globalScene;
-  globalScene.scene.traverse(function (child) {
-    if (child.name === "hand_r") {
-      let helper = new THREE.SkeletonHelper(child);
-      scene.add(helper);
-    }
-  });
 }
 
 function onProgress() {}
@@ -276,8 +270,8 @@ function onError(error) {
 // Handling main action
 
 function moveCharacter(delta) {
-  let moveDistance = 10 * delta; // 200 pixels per second
-  let rotateAngle = (Math.PI / 2) * delta; // pi/2 radians (90 degrees) per second
+  let moveDistance = 10 * delta;
+  let rotateAngle = (Math.PI / 2) * delta;
   if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
   if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
   if (keyboard.pressed("left"))
@@ -320,54 +314,29 @@ function jump() {
 
 function fly() {
   if (flying && !basketCollision) {
-    // console.log("FLYING:", flying);
-    // console.log("BASKET COLLISION:", basketCollision);
-
     handlePositionY();
     handlePositionZ();
     handleRotationX(); // initial rotation as the character is jumping
     handleFlip();
-    if (checkCollision()) {
+
+    // checking for successful dunks
+    if (checkDunk() && enoughFlips) {
       basketCollision = true;
       holdingBall = false;
       console.log("DUNK");
-      setTimeout(() => {
-        nextLevel();
-      }, 1000);
+      displayNextMessage();
+      nextLevel();
+    }
+
+    // checking for unsuccessful jumps
+    if (checkFailure()) {
+      displayLoserMessage();
+      replay();
     }
   }
 }
 
-function nextLevel() {
-  let characterPosition = models.character.scene.position;
-  let characterRotation = models.character.scene.rotation;
-  //console.log("rotation when going to next level", characterRotation.x);
-
-  currentLevel += 1;
-  if (levels[currentLevel].action) levels[currentLevel].action();
-  let initialX = levels[currentLevel].cameraPosition.x;
-  let initialY = levels[currentLevel].cameraPosition.y;
-  let initialZ = levels[currentLevel].cameraPosition.z;
-  camera.position.set(initialX, initialY, initialZ); // works for both big and small screens
-  chooseAnimation(models.character, mixers.character, "Idle", true);
-
-  characterPosition.x = levels[currentLevel].characterInitialPosition.x;
-  characterPosition.y = levels[currentLevel].characterInitialPosition.y;
-  characterPosition.z = levels[currentLevel].characterInitialPosition.z;
-
-  characterRotation.x = -3.14;
-
-  falling = false;
-  basketCollision = false;
-  holdingBall = true;
-  jumpInitiated = false;
-  flying = false;
-
-  initialDistance = characterPosition.z;
-}
-
 function handlePositionY() {
-  // debugger;
   let characterPosition = models.character.scene.position;
   if (
     characterPosition.z >=
@@ -388,13 +357,8 @@ function handlePositionZ() {
 
 function handleRotationX() {
   let characterRotation = models.character.scene.rotation;
-  //console.log("character's rotation during jump", characterRotation.x);
-
   if (characterRotation.x > -4) {
-    //console.log("WE ROTATE");
     characterRotation.x -= 0.02;
-  } else {
-    //console.log("WE DONT ROTATE");
   }
 }
 
@@ -405,7 +369,7 @@ function handleFlip() {
   }
 }
 
-function checkCollision() {
+function checkDunk() {
   if (models.basket && models.character) {
     // adding a box around the hoop collider
     models.basket.scene.traverse(function (child) {
@@ -426,6 +390,43 @@ function checkCollision() {
   }
 }
 
+function checkFailure() {
+  characterBox.setFromObject(models.character.scene);
+  return characterBox.min.y < 0;
+}
+
+function nextLevel() {
+  // going to the next level
+  currentLevel += 1;
+  replay();
+}
+
+function replay() {
+  let characterPosition = models.character.scene.position;
+  let characterRotation = models.character.scene.rotation;
+  // creating new elements on the scene, if they are needed for on specific level
+  if (levels[currentLevel].action) levels[currentLevel].action();
+  // reposition the camera
+  let initialX = levels[currentLevel].cameraPosition.x;
+  let initialY = levels[currentLevel].cameraPosition.y;
+  let initialZ = levels[currentLevel].cameraPosition.z;
+  camera.position.set(initialX, initialY, initialZ);
+  // choose another animation
+  chooseAnimation(models.character, mixers.character, "Idle", true);
+  // reposition the main character at this specific level
+  characterPosition.x = levels[currentLevel].characterInitialPosition.x;
+  characterPosition.y = levels[currentLevel].characterInitialPosition.y;
+  characterPosition.z = levels[currentLevel].characterInitialPosition.z;
+  characterRotation.x = -3.14;
+  // resetting the whole logic
+  falling = false;
+  basketCollision = false;
+  holdingBall = true;
+  jumpInitiated = false;
+  flying = false;
+  initialDistance = characterPosition.z;
+}
+
 // Core functions
 
 function update() {
@@ -442,8 +443,6 @@ function animate() {
   requestAnimationFrame(animate);
   update();
   render();
-  checkCollision();
-  console.log("FLYING:", flying);
 }
 
 // function tuck() {
@@ -458,13 +457,27 @@ function stop() {
 }
 
 function onWindowResize() {
-  //console.log(camera.position);
-
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
 }
 window.addEventListener("resize", onWindowResize);
+
+function displayLoserMessage() {
+  let looserMessage = document.getElementById("loose");
+  looserMessage.style.visibility = "visible";
+  setTimeout(() => {
+    looserMessage.style.visibility = "hidden";
+  }, 3000);
+}
+
+function displayNextMessage() {
+  let nextMessage = document.getElementById("next");
+  nextMessage.style.visibility = "visible";
+  setTimeout(() => {
+    nextMessage.style.visibility = "hidden";
+  }, 3000);
+}
 
 init();
 animate();

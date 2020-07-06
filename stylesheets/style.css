@@ -9,9 +9,24 @@ canvas {
 #info {
   position: absolute;
   color: white;
-  top: 10px;
   width: 100%;
   text-align: center;
   z-index: 100;
   display: block;
+  height: 100vh;
+}
+
+#loose,
+#next {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  background: black;
+  width: 100%;
+  z-index: 100;
+  height: 100vh;
+}
+
+.visible {
+  visibility: visible;
 }
