@@ -16,7 +16,6 @@ let clock = new THREE.Clock();
 let keyboard = new THREEx.KeyboardState();
 let touch = false;
 let jumpInitiated = false;
-let durationJump = 0;
 
 // Models related information
 let initialization = {
@@ -77,33 +76,40 @@ function init() {
   createRenderer();
 
   setTouchListeners();
+  setDesktopListeners();
 }
 
 // Setting up the event listeners for the beginning of the game
 // Pressing space bar on desktop; touching the screen on mobile
 function setTouchListeners() {
   var el = document.querySelector("#scene-container canvas");
-  el.addEventListener("touchstart", handleStartTouch, false);
-  el.addEventListener("touchend", handleEndTouch, false);
+  el.addEventListener("touchstart", handleJumpStart, false);
+  el.addEventListener("touchend", handleJumpEnd, false);
 }
 
-function handleStartTouch() {
+function setDesktopListeners() {
+  window.addEventListener("keydown", function (event) {
+    if (event.code === "Space") {
+      handleJumpStart();
+    }
+  });
+  window.addEventListener("keyup", function (event) {
+    if (event.code === "Space") {
+      handleJumpEnd();
+    }
+  });
+}
+
+function handleJumpStart() {
+  if (!jumpInitiated) {
+    jump();
+  }
+  jumpInitiated = true;
   touch = true;
 }
 
-function checkTouch() {
-  if (touch || keyboard.pressed("space")) {
-    if (!jumpInitiated) {
-      jump();
-    }
-    jumpInitiated = true;
-    durationJump += 1;
-  }
-}
-
-function handleEndTouch() {
+function handleJumpEnd() {
   touch = false;
-  console.log("total jump duration", durationJump);
 }
 
 // Setting up Three.js
@@ -297,51 +303,40 @@ function fly() {
   let characterPosition = models.character.scene.position;
   let characterRotation = models.character.scene.rotation;
 
-  // handling the main character's top/bottom movements until colision with basketball hoop
   if (flying && !basketCollision) {
-    // if (
-    //   characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
-    //   !falling
-    // ) {
-    //   characterPosition.y += 0.1; // rising phase
-    // } else {
-    //   falling = true;
-    //   characterPosition.y -= 0.04; // falling phase
-    // }
-
-    // console.log(initialDistance);
-    // console.log(characterPosition.z);
-
-    console.log("CHARACTER POSITION", characterPosition.z);
-    console.log("DISTANCE", initialDistance / 2);
-
-    if (characterPosition.z >= (2 * initialDistance) / 3 && !falling) {
-      characterPosition.y += 0.1; // rising phase
-    } else {
-      falling = true;
-      characterPosition.y -= 0.04; // falling phase
-    }
-
-    // handling the main's character position across z axis
-    characterPosition.z -= 0.05;
-
-    // handling initial slight rotation of main character
-    if (characterRotation.x > -4) {
-      characterRotation.x -= 0.02;
-    }
-
-    // handling the main's character rotation during flip
-    // USE USER INPUT (JUMP DURATION)
-    console.log("JUMP DURATION", durationJump);
-
-    if (characterPosition.y >= 3.2 && touch) {
-      characterRotation.x -= 0.3; // handling the 
-    }
-
+    handlePositionY(characterPosition);
+    handlePositionZ(characterPosition);
+    handleRotationX(characterRotation); // initial rotation as the character is jumping
+    handleFlip(characterPosition, characterRotation);
     if (checkCollision()) {
       basketCollision = true;
       holdingBall = false;
     }
+  }
+}
+
+function handlePositionY(characterPosition) {
+  if (characterPosition.z >= (2 * initialDistance) / 3 && !falling) {
+    characterPosition.y += 0.1; // rising phase
+  } else {
+    falling = true;
+    characterPosition.y -= 0.04; // falling phase
+  }
+}
+
+function handlePositionZ(characterPosition) {
+  characterPosition.z -= 0.05;
+}
+
+function handleRotationX(characterRotation) {
+  if (characterRotation.x > -4) {
+    characterRotation.x -= 0.02;
+  }
+}
+
+function handleFlip(characterPosition, characterRotation) {
+  if (characterPosition.y >= 3.2 && touch) {
+    characterRotation.x -= 0.2;
   }
 }
 
@@ -375,7 +370,6 @@ function animate() {
   update();
   render();
   checkCollision();
-  checkTouch();
 }
 
 // function tuck() {
