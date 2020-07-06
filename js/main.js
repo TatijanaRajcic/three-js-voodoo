@@ -67,10 +67,10 @@ let levels = {
 };
 
 let currentLevel = 1;
+// let currentLevel = 2
 
 // Models representation on canvas
-var hoopBox = new THREE.Box3();
-var characterBox = new THREE.Box3();
+let hoopBox = new THREE.Box3();
 let basketBall = createSphere();
 
 // Action related information
@@ -143,7 +143,6 @@ function createCamera() {
   const near = 0.1;
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  //camera.position.set(12, 8, 25); // on bigger screens
   camera.position.set(4, 13, 28); // works for both big and small screens
   //camera.position.set(15, 40, 20); // for diving board version
 }
