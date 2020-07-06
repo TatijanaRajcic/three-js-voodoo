@@ -28,8 +28,8 @@ let initialization = {
   character: {
     url: "../models/newgltf/newattempt2.glb",
     initialStatus: {
-      position: new THREE.Vector3(-0.3, 0, 8),
-      //position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
+      //position: new THREE.Vector3(-0.3, 0, 8),
+      position: new THREE.Vector3(-0.3, 15, 8), // for diving board version
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
@@ -49,6 +49,25 @@ let initialization = {
 
 let models = {};
 let mixers = {};
+
+let levels = {
+  1: {
+    raising: 0.1,
+    startFalling: 2 / 3,
+    falling: 0.04,
+    forward: 0.05,
+    flip: 0.2,
+  },
+  2: {
+    raising: 0.06,
+    startFalling: 4 / 5,
+    falling: 0.13,
+    forward: 0.04,
+    flip: 0.2,
+  },
+};
+
+let currentLevel = 2;
 
 // Models representation on canvas
 var basketBox = new THREE.Box3();
@@ -70,7 +89,7 @@ function init() {
   createLights();
 
   loadModels();
-  //createDivingBoard();
+  createDivingBoard();
 
   createControls();
   createRenderer();
@@ -126,8 +145,8 @@ function createCamera() {
   const far = 100;
   camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   //camera.position.set(12, 8, 25); // on bigger screens
-  camera.position.set(4, 13, 28); // works for both big and small screens
-  //camera.position.set(15, 40, 20); // for diving board version
+  //camera.position.set(4, 13, 28); // works for both big and small screens
+  camera.position.set(15, 40, 20); // for diving board version
 }
 
 function createLights() {
@@ -307,7 +326,7 @@ function fly() {
     handlePositionY(characterPosition);
     handlePositionZ(characterPosition);
     handleRotationX(characterRotation); // initial rotation as the character is jumping
-    handleFlip(characterPosition, characterRotation);
+    handleFlip(characterRotation);
     if (checkCollision()) {
       basketCollision = true;
       holdingBall = false;
@@ -316,16 +335,20 @@ function fly() {
 }
 
 function handlePositionY(characterPosition) {
-  if (characterPosition.z >= (2 * initialDistance) / 3 && !falling) {
-    characterPosition.y += 0.1; // rising phase
+  if (
+    characterPosition.z >=
+      levels[currentLevel].startFalling * initialDistance &&
+    !falling
+  ) {
+    characterPosition.y += levels[currentLevel].raising; // rising phase
   } else {
     falling = true;
-    characterPosition.y -= 0.04; // falling phase
+    characterPosition.y -= levels[currentLevel].falling; // falling phase
   }
 }
 
 function handlePositionZ(characterPosition) {
-  characterPosition.z -= 0.05;
+  characterPosition.z -= levels[currentLevel].forward;
 }
 
 function handleRotationX(characterRotation) {
@@ -334,9 +357,9 @@ function handleRotationX(characterRotation) {
   }
 }
 
-function handleFlip(characterPosition, characterRotation) {
-  if (characterPosition.y >= 3.2 && touch) {
-    characterRotation.x -= 0.2;
+function handleFlip(characterRotation) {
+  if (falling && touch) {
+    characterRotation.x -= levels[currentLevel].flip;
   }
 }
 
