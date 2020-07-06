@@ -198,7 +198,9 @@ function onLoad(loadedObject, initialStatus, modelName, callback) {
   const mixer = new THREE.AnimationMixer(model);
   mixers[modelName] = mixer;
   if (modelName === "character") {
-    initialDistance = model.position.z / 2;
+    initialDistance = model.position.z;
+
+    console.log(initialDistance);
 
     chooseAnimation(loadedObject, mixer, "Straight");
   }
@@ -297,25 +299,28 @@ function fly() {
 
   // handling the main character's top/bottom movements until colision with basketball hoop
   if (flying && !basketCollision) {
-    if (
-      characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
-      !falling
-    ) {
-      characterPosition.y += 0.1; // rising phase
-    } else {
-      falling = true;
-      characterPosition.y -= 0.04; // falling phase
-    }
-
-    // console.log(initialDistance);
-    // console.log(characterPosition.z);
-
-    // if (characterPosition.z >= initialDistance / 2 && !falling) {
+    // if (
+    //   characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
+    //   !falling
+    // ) {
     //   characterPosition.y += 0.1; // rising phase
     // } else {
     //   falling = true;
     //   characterPosition.y -= 0.04; // falling phase
     // }
+
+    // console.log(initialDistance);
+    // console.log(characterPosition.z);
+
+    console.log("CHARACTER POSITION", characterPosition.z);
+    console.log("DISTANCE", initialDistance / 2);
+
+    if (characterPosition.z >= (2 * initialDistance) / 3 && !falling) {
+      characterPosition.y += 0.1; // rising phase
+    } else {
+      falling = true;
+      characterPosition.y -= 0.04; // falling phase
+    }
 
     // handling the main's character position across z axis
     characterPosition.z -= 0.05;
@@ -327,12 +332,10 @@ function fly() {
 
     // handling the main's character rotation during flip
     // USE USER INPUT (JUMP DURATION)
-    if (
-      characterPosition.y >= 3 &&
-      characterPosition.y <= basketBox.max.y + basketBox.max.y / 5 &&
-      !falling
-    ) {
-      characterRotation.x -= 0.3;
+    console.log("JUMP DURATION", durationJump);
+
+    if (characterPosition.y >= 3.2 && touch) {
+      characterRotation.x -= 0.3; // handling the 
     }
 
     if (checkCollision()) {
