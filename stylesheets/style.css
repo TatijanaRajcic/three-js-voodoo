@@ -28,7 +28,8 @@ canvas {
 
 #loose,
 #next,
-#end {
+#end,
+#flip {
   visibility: hidden;
   position: absolute;
   top: 0;

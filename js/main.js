@@ -96,7 +96,7 @@ let falling = false;
 let basketCollision = false;
 let holdingBall = true;
 let initialDistance;
-let enoughFlips = true;
+let enoughFlips = false;
 
 // Lunching the whole page
 function init() {
@@ -150,8 +150,6 @@ function handleJumpEnd() {
 // Setting up Three.js
 function createScene() {
   scene = new THREE.Scene();
-  let axesHelper = new THREE.AxesHelper(200);
-  scene.add(axesHelper);
 }
 
 function createCamera() {
@@ -183,7 +181,7 @@ function createDivingBoard(height) {
 
 function createSphere() {
   let geometry = new THREE.SphereGeometry(0.1, 32, 32);
-  let material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  let material = new THREE.MeshBasicMaterial({ color: 0xff8c00 });
   let sphere = new THREE.Mesh(geometry, material);
   return sphere;
 }
@@ -270,7 +268,7 @@ function onError(error) {
 // Handling main action
 
 function moveCharacter(delta) {
-  let moveDistance = 10 * delta;
+  let moveDistance = 5 * delta;
   let rotateAngle = (Math.PI / 2) * delta;
   if (keyboard.pressed("A")) models.character.scene.rotation.y += rotateAngle;
   if (keyboard.pressed("D")) models.character.scene.rotation.y -= rotateAngle;
@@ -325,6 +323,10 @@ function fly() {
       holdingBall = false;
       console.log("DUNK");
       nextLevel();
+    } else if (checkDunk() && !enoughFlips) {
+      displayFlipMessage();
+      console.log("not enough flips!");
+      replay();
     }
 
     // checking for unsuccessful jumps
@@ -364,6 +366,8 @@ function handleRotationX() {
 function handleFlip() {
   let characterRotation = models.character.scene.rotation;
   if (falling && touch) {
+    console.log(characterRotation.x);
+
     characterRotation.x -= levels[currentLevel].flip;
   }
 }
@@ -376,7 +380,7 @@ function checkDunk() {
         hoopBox.setFromObject(child);
       }
     });
-    scene.add(new THREE.Box3Helper(hoopBox, 0xff0000));
+    // scene.add(new THREE.Box3Helper(hoopBox, 0xff0000));
 
     // checking for collision between basketball and the hoop collider
     let center = new THREE.Vector3();
@@ -481,6 +485,16 @@ function displayNextMessage() {
 function displayEndMessage() {
   let endMessage = document.getElementById("end");
   endMessage.style.visibility = "visible";
+}
+
+function displayFlipMessage() {
+  let flipMessage = document.getElementById("flip");
+  flipMessage.querySelector("span").innerHTML =
+    levels[currentLevel].minimumFlips;
+  flipMessage.style.visibility = "visible";
+  setTimeout(() => {
+    flipMessage.style.visibility = "hidden";
+  }, 3000);
 }
 
 init();
