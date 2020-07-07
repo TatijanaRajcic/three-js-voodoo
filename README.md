@@ -29,4 +29,3 @@ Hey there! Here's my technical test. I decided to reproduce a short version of F
 Thank you for reading me.
 
 To play: use the spacebar on desktop, and tap one mobile.
-And don't forget to npm install!
