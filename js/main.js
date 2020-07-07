@@ -29,12 +29,6 @@ let initialization = {
       rotation: new THREE.Vector3(0, Math.PI, 0),
     },
   },
-  // trempoline: {
-  //   url: "../models/gltf/trempoline/SM_Prop_Trampoline_01.glb",
-  //   initialStatus: {
-  //     position: new THREE.Vector3(0, 0, 10),
-  //   },
-  // },
   stadium: {
     url: "../models/gltf/cartoon stadiums/cartoon stadium.glb",
     initialStatus: {
@@ -42,11 +36,6 @@ let initialization = {
     },
   },
 };
-
-let models = {};
-let mixers = {};
-
-let currentLevel = 0;
 
 let levels = [
   {
@@ -83,12 +72,17 @@ let levels = [
   },
 ];
 
+// Empty variables we need to store uploaded models and mixers
+let models = {};
+let mixers = {};
+
 // Models representation on canvas
 let hoopBox = new THREE.Box3();
 let basketBall = createSphere();
 let characterBox = new THREE.Box3();
 
 // Action related information
+let currentLevel = 0;
 let touch = false;
 let jumpInitiated = false;
 let flying = false;
@@ -266,7 +260,6 @@ function onError(error) {
 }
 
 // Handling main action
-
 function moveCharacter(delta) {
   let moveDistance = 5 * delta;
   let rotateAngle = (Math.PI / 2) * delta;
@@ -321,11 +314,9 @@ function fly() {
     if (checkDunk() && enoughFlips) {
       basketCollision = true;
       holdingBall = false;
-      console.log("DUNK");
       nextLevel();
     } else if (checkDunk() && !enoughFlips) {
       displayFlipMessage();
-      console.log("not enough flips!");
       replay();
     }
 
@@ -365,23 +356,25 @@ function handleRotationX() {
 
 function handleFlip() {
   let characterRotation = models.character.scene.rotation;
+  // handling character's flip
   if (falling && touch) {
-    console.log(characterRotation.x);
-
     characterRotation.x -= levels[currentLevel].flip;
+  }
+  // checking if the character has done enough flips
+  let flipLimit = -180 * (levels[currentLevel].minimumFlips + 2);
+  if (THREE.MathUtils.radToDeg(characterRotation.x) < flipLimit) {
+    enoughFlips = true;
   }
 }
 
 function checkDunk() {
   if (models.basket && models.character) {
-    // adding a box around the hoop collider
+    // adding a box around the hoop collider for colision detection
     models.basket.scene.traverse(function (child) {
       if (child.name === "HoopCollider") {
         hoopBox.setFromObject(child);
       }
     });
-    // scene.add(new THREE.Box3Helper(hoopBox, 0xff0000));
-
     // checking for collision between basketball and the hoop collider
     let center = new THREE.Vector3();
     center.setFromMatrixPosition(basketBall.matrixWorld);
@@ -398,8 +391,9 @@ function checkFailure() {
   return characterBox.min.y < 0;
 }
 
+// Restarting the game
 function nextLevel() {
-  // going to the next level
+  enoughFlips = false;
   if (currentLevel < levels.length - 1) {
     currentLevel += 1;
     displayNextMessage();
@@ -427,7 +421,7 @@ function replay() {
   characterPosition.x = levels[currentLevel].characterInitialPosition.x;
   characterPosition.y = levels[currentLevel].characterInitialPosition.y;
   characterPosition.z = levels[currentLevel].characterInitialPosition.z;
-  characterRotation.x = -3.14;
+  characterRotation.x = THREE.MathUtils.degToRad(-180);
   // resetting the whole logic
   falling = false;
   basketCollision = false;
