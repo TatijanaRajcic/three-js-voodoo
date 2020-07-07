@@ -111,9 +111,8 @@ function init() {
 // Setting up the event listeners for the beginning of the game
 // Pressing space bar on desktop; touching the screen on mobile
 function setTouchListeners() {
-  let el = document.querySelector("#scene-container canvas");
-  el.addEventListener("touchstart", handleJumpStart, false);
-  el.addEventListener("touchend", handleJumpEnd, false);
+  window.addEventListener("touchstart", handleJumpStart, false);
+  window.addEventListener("touchend", handleJumpEnd, false);
 }
 
 function setDesktopListeners() {
