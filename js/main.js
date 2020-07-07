@@ -462,34 +462,45 @@ window.addEventListener("resize", onWindowResize);
 
 function displayLoserMessage() {
   let looserMessage = document.getElementById("loose");
-  looserMessage.style.visibility = "visible";
+  looserMessage.style.display = "flex";
   setTimeout(() => {
-    looserMessage.style.visibility = "hidden";
+    looserMessage.style.display = "none";
   }, 3000);
 }
 
 function displayNextMessage() {
   let nextMessage = document.getElementById("next");
-  nextMessage.style.visibility = "visible";
+  nextMessage.style.display = "flex";
   setTimeout(() => {
-    nextMessage.style.visibility = "hidden";
+    nextMessage.style.display = "none";
   }, 3000);
 }
 
 function displayEndMessage() {
   let endMessage = document.getElementById("end");
-  endMessage.style.visibility = "visible";
+  endMessage.style.display = "flex";
 }
 
 function displayFlipMessage() {
   let flipMessage = document.getElementById("flip");
   flipMessage.querySelector("span").innerHTML =
     levels[currentLevel].minimumFlips;
-  flipMessage.style.visibility = "visible";
+  flipMessage.style.display = "flex";
   setTimeout(() => {
-    flipMessage.style.visibility = "hidden";
+    flipMessage.style.display = "none";
   }, 3000);
 }
 
-init();
-animate();
+function displayInstructions() {
+  let instructions = document.getElementById("instructions");
+  instructions.style.display = "flex";
+}
+
+document.getElementById("play").onclick = function () {
+  let instructions = document.getElementById("instructions");
+  instructions.style.display = "none";
+  init();
+  animate();
+};
+
+displayInstructions();
