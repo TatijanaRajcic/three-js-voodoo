@@ -2,6 +2,7 @@ import * as THREE from "../node_modules/three/src/Three.js";
 import { OrbitControls } from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import THREEx from "./threex/threex.keyboardstate.js";
+import { Vector2 } from "../node_modules/three/src/Three.js";
 
 // Three.js initialization
 let container;
@@ -50,7 +51,7 @@ let levels = [
   },
   {
     characterInitialPosition: new THREE.Vector3(-0.3, 7.5, 8),
-    cameraPosition: { x: 10, y: 15, z: 30 },
+    cameraPosition: { x: 6, y: 20, z: 30 },
     raising: 0.07,
     startFalling: 3 / 4,
     falling: 0.12,
@@ -61,7 +62,7 @@ let levels = [
   },
   {
     characterInitialPosition: new THREE.Vector3(-0.3, 15, 8),
-    cameraPosition: { x: 12, y: 25, z: 33 },
+    cameraPosition: { x: 7, y: 30, z: 32 },
     raising: 0.06,
     startFalling: 4 / 5,
     falling: 0.13,
@@ -111,8 +112,9 @@ function init() {
 // Setting up the event listeners for the beginning of the game
 // Pressing space bar on desktop; touching the screen on mobile
 function setTouchListeners() {
-  window.addEventListener("touchstart", handleJumpStart, false);
-  window.addEventListener("touchend", handleJumpEnd, false);
+  let el = document.querySelector("#scene-container canvas");
+  el.addEventListener("touchstart", handleJumpStart, false);
+  el.addEventListener("touchend", handleJumpEnd, false);
 }
 
 function setDesktopListeners() {
@@ -460,46 +462,69 @@ function onWindowResize() {
 window.addEventListener("resize", onWindowResize);
 
 function displayLoserMessage() {
-  let looserMessage = document.getElementById("loose");
-  looserMessage.style.display = "flex";
+  let mainMessage = document.getElementById("info");
+  mainMessage.innerHTML = `<p>Sorry, you did not make it this time. 😭 Try again.</p>`;
+  mainMessage.style.display = "flex";
   setTimeout(() => {
-    looserMessage.style.display = "none";
+    mainMessage.style.display = "none";
   }, 3000);
 }
 
 function displayNextMessage() {
-  let nextMessage = document.getElementById("next");
-  nextMessage.style.display = "flex";
+  let mainMessage = document.getElementById("info");
+  mainMessage.innerHTML = `<p>You da best. Let's try the next one 🌶️</p>`;
+  mainMessage.style.display = "flex";
   setTimeout(() => {
-    nextMessage.style.display = "none";
+    mainMessage.style.display = "none";
   }, 3000);
 }
 
 function displayEndMessage() {
-  let endMessage = document.getElementById("end");
-  endMessage.style.display = "flex";
+  let mainMessage = document.getElementById("info");
+  mainMessage.innerHTML = `<p>Congrats! You made it to the end!</p>
+  <p>
+    If you are interested, check out my
+    <a href="https://github.com/TatijanaRajcic">Github!</a>
+  </p>`;
+  mainMessage.style.display = "flex";
 }
 
 function displayFlipMessage() {
-  let flipMessage = document.getElementById("flip");
-  flipMessage.querySelector("span").innerHTML =
-    levels[currentLevel].minimumFlips;
-  flipMessage.style.display = "flex";
+  let mainMessage = document.getElementById("info");
+  mainMessage.innerHTML = `<p>Dunking is not enough 🏀</p>
+  <p>You must do <span>${levels[currentLevel].minimumFlips}</span> flips</p>`;
+  mainMessage.style.display = "flex";
   setTimeout(() => {
-    flipMessage.style.display = "none";
+    mainMessage.style.display = "none";
   }, 3000);
 }
 
-function displayInstructions() {
-  let instructions = document.getElementById("instructions");
-  instructions.style.display = "flex";
+function displayInstructions(callback) {
+  let mainMessage = document.getElementById("info");
+  mainMessage.innerHTML = `<h1>
+                              <div>
+                                Hey there!
+                              </div>
+                              <div>
+                                Welcome to my version of Flip Dunk ⛹️‍♀
+                              </div>
+                            </h1>
+                            <p>
+                              During the game, you can either press de Space Bar if you are on
+                              desktop ⌨️ or tap if you are on mobile 📱
+                            </p>
+                            <button id="play">Let's play !</button>`;
+  mainMessage.style.display = "flex";
+  callback();
 }
 
-document.getElementById("play").onclick = function () {
-  let instructions = document.getElementById("instructions");
-  instructions.style.display = "none";
-  init();
-  animate();
-};
+function setInitialEventListener() {
+  document.getElementById("play").onclick = function () {
+    let mainMessage = document.getElementById("info");
+    mainMessage.style.display = "none";
+    init();
+    animate();
+  };
+}
 
-displayInstructions();
+displayInstructions(setInitialEventListener);
