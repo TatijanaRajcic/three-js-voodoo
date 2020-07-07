@@ -28,4 +28,5 @@ Hey there! Here's my technical test. I decided to reproduce a short version of F
 
 Thank you for reading me.
 
-To play: use the spacebar on desktop, and tap one mobile.
+To play: use the spacebar on desktop, and tap one mobile
+To open the html file: use lite-server or live server for example
