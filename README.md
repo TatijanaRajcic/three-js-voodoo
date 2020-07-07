@@ -13,6 +13,7 @@ Hey there! Here's my technical test. I decided to reproduce a short version of F
 - As I have no prior experience in Blender nor Three.js, it took me quite some time to read documentation and watch tutorials. The most frustrating part were the struggles I encountered with the FBX files: I did not manage to work with them so I exported them under gltf. Also, it took me some time to combine them all together, so that one model would have all the relevant animations.
 - I had big problems with the "Tuck" animation, which was essential to make the flip, as it seemed bugged to me, or at least I did not know which adjustments I could do in Blender to fix it. I tried to import new animation from Mixamo and combine it with the existing, but it was unsuccessful
 - The lack of time (as I'm fully working during the week) stopped me from exploring Textures and more specific 3D matters
+- My touchpad died along the way, unabling me to test the final mobile version
 
 # The features I added
 
@@ -27,4 +28,5 @@ Hey there! Here's my technical test. I decided to reproduce a short version of F
 
 Thank you for reading me.
 
+To play: use the spacebar on desktop, and tap one mobile.
 And don't forget to npm install!
